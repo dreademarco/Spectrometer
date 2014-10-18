@@ -68,18 +68,15 @@ int CircularArray2DWorker<T>::getCurrentColumnWriteIndex()
 {
     return currentColumnWriteIdx; //last filled column;
 }
-
 template <typename T>
 void CircularArray2DWorker<T>::setCurrentColumnWriteIndex(int idx){
      currentColumnWriteIdx = idx;
 }
-
 template <typename T>
 int CircularArray2DWorker<T>::getCurrentColumnReadIndex()
 {
     return currentColumnReadIdx;
 }
-
 template <typename T>
 void CircularArray2DWorker<T>::setCurrentColumnReadIndex(int idx){
      currentColumnReadIdx = idx;

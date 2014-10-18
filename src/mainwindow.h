@@ -8,9 +8,9 @@
 #include "common.h"
 #include "circulararray2dworker.h"
 #include "circulararray2dworkersafe.h"
-
+#include "circulararray2dworkerthreaded.h"
+#include "circulararray2dspectrumthreaded.h"
 #include <QMainWindow>
-
 
 namespace Ui {
 class MainWindow;
@@ -29,8 +29,8 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    Producer *producer_thread;
-    Consumer *consumer_thread;
+    //Producer *producer_thread;
+    //Consumer *consumer_thread;
     ProducerUnsafe *unsafeProducer_thread;
     ConsumerUnsafe *unsafeConsumer_thread;
 

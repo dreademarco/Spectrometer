@@ -8,6 +8,8 @@
 #include "common.h"
 #include "stdio.h"
 #include "circulararray2dworkersafe.h"
+#include "circulararray2dworkerthreaded.h"
+#include "circulararray2dspectrumthreaded.h"
 #include "spectrogramplot.h"
 
 class ConsumerUnsafe : public QThread
@@ -16,7 +18,7 @@ class ConsumerUnsafe : public QThread
 
 public:
     ConsumerUnsafe(QObject *parent = 0);
-    ConsumerUnsafe(QObject *parent = 0, CircularArray2DWorkerSafe<float> *dataBlock = NULL, SpectrogramData<float> *spectData = NULL, SpectrogramPlot *myPlot = NULL);
+    ConsumerUnsafe(QObject *parent = 0, CircularArray2DSpectrumThreaded<float> *dataBlock = NULL, SpectrogramData<float> *spectData = NULL, SpectrogramPlot *myPlot = NULL);
     void run();
 
 signals:
@@ -25,7 +27,7 @@ signals:
     void spectDataReceived();
 
 private:
-    CircularArray2DWorkerSafe<float> *dataBlock;
+    CircularArray2DSpectrumThreaded<float> *dataBlock;
     SpectrogramData<float> *mySpectrogramData;
     SpectrogramPlot *myPlot;
 };

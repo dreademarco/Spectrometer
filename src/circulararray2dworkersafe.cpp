@@ -29,20 +29,22 @@ CircularArray2DWorkerSafe<T>::~CircularArray2DWorkerSafe(){
 
 template <typename T>
 int CircularArray2DWorkerSafe<T>::getNumFreeSpaces(){
-    int tempFreeSpaces = 0;
-    mutex.lock();
-    tempFreeSpaces = numberFreeSpaces;
-    mutex.unlock();
-    return tempFreeSpaces;
+//    int tempFreeSpaces = 0;
+//    mutex.lock();
+//    tempFreeSpaces = numberFreeSpaces;
+//    mutex.unlock();
+//    return tempFreeSpaces;
+    return numberFreeSpaces;
 }
 
 template <typename T>
 int CircularArray2DWorkerSafe<T>::getNumUsedSpaces(){
-    int tempUsedSpaces = 0;
-    mutex.lock();
-    tempUsedSpaces = numberUsedSpaces;
-    mutex.unlock();
-    return tempUsedSpaces;
+//    int tempUsedSpaces = 0;
+//    mutex.lock();
+//    tempUsedSpaces = numberUsedSpaces;
+//    mutex.unlock();
+//    return tempUsedSpaces;
+    return numberUsedSpaces;
 }
 
 template <typename T>

@@ -21,7 +21,11 @@ SOURCES += main.cpp\
     customcolormap.cpp \
     circulararray2dworkersafe.cpp \
     producerunsafe.cpp \
-    consumerunsafe.cpp
+    consumerunsafe.cpp \
+    circulararray2dworkerthreaded.cpp \
+    array2dspectrum.cpp \
+    circulararray2dspectrum.cpp \
+    circulararray2dspectrumthreaded.cpp
 
 HEADERS  += mainwindow.h \
     array2dworker.h \
@@ -34,7 +38,11 @@ HEADERS  += mainwindow.h \
     customcolormap.h \
     circulararray2dworkersafe.h \
     producerunsafe.h \
-    consumerunsafe.h
+    consumerunsafe.h \
+    circulararray2dworkerthreaded.h \
+    array2dspectrum.h \
+    circulararray2dspectrum.h \
+    circulararray2dspectrumthreaded.h
 
 FORMS    += mainwindow.ui
 

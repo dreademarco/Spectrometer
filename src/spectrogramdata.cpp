@@ -10,7 +10,7 @@ using namespace std;
 //}
 
 template <typename T>
-SpectrogramData<T>::SpectrogramData(CircularArray2DWorker<T> *data, int freq_bins,int samples) : QwtRasterData()
+SpectrogramData<T>::SpectrogramData(CircularArray2DSpectrum<T> *data, int freq_bins,int samples) : QwtRasterData()
 {
     setInterval(Qt::XAxis, QwtInterval(0,samples-1));
     setInterval(Qt::YAxis, QwtInterval(0,freq_bins-1));
@@ -19,25 +19,53 @@ SpectrogramData<T>::SpectrogramData(CircularArray2DWorker<T> *data, int freq_bin
 }
 
 template <typename T>
-void SpectrogramData<T>::addData(T* columnData){
-    dataArray->pushColumn(columnData);
+void SpectrogramData<T>::addData(T* sampleData){
+    dataArray->pushSample(sampleData);
     if(dataArray->getRefillCount()>0){
-        dataArray->incrementColumnReadIndex();
+        dataArray->incrementReadIndex();
     }
 }
 
 template <typename T>
-void SpectrogramData<T>::addDataSection(Array2DWorker<T> *blockData){
-    for (int i = 0; i < blockData->getColumnCount(); ++i) {
-        this->addData(blockData->getColumn(i));
+void SpectrogramData<T>::fastAddDataSectionMemCpy(CircularArray2DSpectrumThreaded<T> *sourceDataBlock, int copySize){
+    //calculate cells to copy over
+    int cellsToCopy = copySize * sourceDataBlock->getChannelCount();
+
+    //get byte read offset from source
+    int sourceReadIdx = sourceDataBlock->getCurrentSampleReadIndex()+1;
+    int cellsRead = sourceDataBlock->getChannelCount()*sourceReadIdx;
+
+    //get byte write offset from here
+    int destWriteIdx = this->dataArray->getCurrentSampleWriteIndex();
+    int cellsWritten = sourceDataBlock->getChannelCount()*destWriteIdx;
+
+    memcpy(&this->dataArray->data[cellsWritten], &sourceDataBlock->data[cellsRead], cellsToCopy * sizeof(T));
+
+    for (int i = 0; i < copySize; ++i) {
+        this->dataArray->incrementWriteIndex();
+        sourceDataBlock->incrementReadIndex();
     }
 }
 
 template <typename T>
-void SpectrogramData<T>::resetData(){
-    for (int i = 0; i < dataArray->getRowCount(); ++i) {
-        for (int j = 0; j < dataArray->getColumnCount(); ++j) {
-            dataArray->set(i,j,0);
+void SpectrogramData<T>::fastAddDataSection(CircularArray2DSpectrumThreaded<T> *sourceDataBlock,int copySize){
+    for (int i = 0; i < copySize; ++i) {
+        this->addData(sourceDataBlock->popSample());
+    }
+}
+
+template <typename T>
+void SpectrogramData<T>::addDataSection(Array2DSpectrum<T> *blockData){
+    for (int i = 0; i < blockData->getSampleCount(); ++i) {
+        this->addData(blockData->getChannelsForSample(i));
+    }
+}
+
+template <typename T>
+void SpectrogramData<T>::resetData(){   
+    for (int sampleIdx = 0; sampleIdx < dataArray->getSampleCount(); ++sampleIdx) {
+        for (int channelIdx = 0; channelIdx < dataArray->getChannelCount(); ++channelIdx) {
+            dataArray->set(channelIdx,sampleIdx,0);
         }
     }
 }
@@ -45,17 +73,14 @@ void SpectrogramData<T>::resetData(){
 template <typename T>
 double SpectrogramData<T>::value( double x, double y ) const
 {    
-//    int column = (int) x;
-//    int row = (int) y;
-//    return dataArray->at(row,column); // (1) convert to our notation where we reference by [row,column]
-
-    int column = (int) x;
-    int row = (int) y;
-    column = column + dataArray->getCurrentColumnReadIndex(); //since ReadIdx might have moved
-    if(column>=dataArray->getColumnCount()){
-        column = column - dataArray->getColumnCount();
+    int sample_idx = (int) x;
+    int channel_idx = (int) y;
+    sample_idx = sample_idx + dataArray->getCurrentSampleReadIndex(); //since ReadIdx might have moved
+    if(sample_idx>=dataArray->getSampleCount()){
+        sample_idx = sample_idx - dataArray->getSampleCount();
     }
-    return (double) dataArray->at(row,column);
+    //return (double) dataArray->at(channel_idx,sample_idx);
+    return (double) dataArray->at(channel_idx,this->dataArray->getSampleCount()-sample_idx);
 }
 
 template class SpectrogramData<int>;
