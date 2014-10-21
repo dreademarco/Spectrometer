@@ -5,7 +5,7 @@ template <typename T>
 CircularArray2DSpectrum<T>::CircularArray2DSpectrum() : Array2DSpectrum<T>()
 {
     currentSampleWriteIdx = 0;
-    currentSampleReadIdx = 0;
+    currentSampleReadIdx = this->getSampleCount()-1;
     refillCounter = 0;
 }
 
@@ -13,7 +13,7 @@ template <typename T>
 CircularArray2DSpectrum<T>::CircularArray2DSpectrum(int channels, int samples) : Array2DSpectrum<T>(channels,samples)
 {
     currentSampleWriteIdx = 0;
-    currentSampleReadIdx = 0;
+    currentSampleReadIdx = this->getSampleCount()-1;
     refillCounter = 0;
 }
 
@@ -21,7 +21,7 @@ template <typename T>
 CircularArray2DSpectrum<T>::~CircularArray2DSpectrum()
 {
     currentSampleWriteIdx = 0;
-    currentSampleReadIdx = 0;
+    currentSampleReadIdx = this->getSampleCount()-1;
     refillCounter = 0;
 }
 
@@ -91,12 +91,27 @@ void CircularArray2DSpectrum<T>::pushSpectrum(Array2DSpectrum<T> spectrumData)
     }
 }
 
+//template <typename T>
+//void CircularArray2DSpectrum<T>::pushSpectrumMemCpy(Array2DSpectrum<T> spectrumData){
+//    for (int i = 0; i < spectrumData.getSampleCount(); ++i) {
+//        this->pushSampleMemCpy(spectrumData.getChannelsForSample(i));
+//    }
+//}
+
 template <typename T>
 void CircularArray2DSpectrum<T>::pushSample(T* sampleData)
 {
     this->setSample(currentSampleWriteIdx,sampleData);
     this->incrementWriteIndex();
 }
+
+//template <typename T>
+//void CircularArray2DSpectrum<T>::pushSampleMemCpy(T* sampleData){
+//    int cellsToCopy = this->getChannelCount();
+//    int cellsWritten = this->getCurrentSampleWriteIndex()*this->getChannelCount();
+//    memcpy(&this->data[cellsWritten+1],&sampleData,cellsToCopy*sizeof(T));
+//    this->incrementWriteIndex();
+//}
 
 template <typename T>
 T* CircularArray2DSpectrum<T>::popSample()
@@ -113,6 +128,40 @@ void CircularArray2DSpectrum<T>::popSampleSection(int length, Array2DSpectrum<T>
 {
     for (int i = 0; i < length; ++i) {
         outputSection->setSample(i,this->popSample());
+    }
+}
+
+template <typename T>
+void CircularArray2DSpectrum<T>::popSampleSectionFast(int length, Array2DSpectrum<T> *outputSection){
+    //Array2DSpectrum<T> samplesSection(channels,n_samples);
+    int cellsToCopy = this->getChannelCount();
+    int cellsReadIdx = 0;
+    int cellsWriteIdx = 0;
+    for (int i = 0; i < length; ++i) {
+        this->incrementReadIndex();
+        cellsReadIdx = (cellsToCopy*getCurrentSampleReadIndex());
+        memcpy(&outputSection->data[cellsWriteIdx],&this->data[cellsReadIdx],cellsToCopy*sizeof(T));
+        cellsWriteIdx = cellsWriteIdx+cellsToCopy;
+        //this->incrementReadIndex();
+    }
+//    int cellsToCopy = channels*length;
+//    int startReadIndx = this->getCurrentSampleReadIndex();
+//    int cellsReadIdx = (channels*startReadIndx)+1;
+//    memcpy(&output->data[0],&this->data[cellsReadIdx],cellsToCopy*sizeof(T));
+}
+
+template <typename T>
+void CircularArray2DSpectrum<T>::popSampleSectionFast(int length, CircularArray2DSpectrum<T> *outputSection){
+    int cellsToCopy = this->getChannelCount();
+    int destinationWrittenCells = 0;
+    int sourceReadCells = 0;
+
+    for (int i = 0; i < length; ++i) {
+        this->incrementReadIndex();
+        destinationWrittenCells = cellsToCopy*outputSection->getCurrentSampleWriteIndex();
+        sourceReadCells = cellsToCopy*getCurrentSampleReadIndex();        
+        memcpy(&outputSection->data[destinationWrittenCells],&this->data[sourceReadCells],cellsToCopy*sizeof(T));
+        outputSection->incrementWriteIndex();
     }
 }
 

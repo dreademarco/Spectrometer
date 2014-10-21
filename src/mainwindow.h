@@ -10,6 +10,7 @@
 #include "circulararray2dworkersafe.h"
 #include "circulararray2dworkerthreaded.h"
 #include "circulararray2dspectrumthreaded.h"
+#include "pipeline.h"
 #include <QMainWindow>
 
 namespace Ui {
@@ -33,6 +34,7 @@ private:
     //Consumer *consumer_thread;
     ProducerUnsafe *unsafeProducer_thread;
     ConsumerUnsafe *unsafeConsumer_thread;
+    Pipeline *pipeline_thread;
 
 public slots:
     void onBufferValueChanged(int);

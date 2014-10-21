@@ -7,7 +7,7 @@ SpectrogramPlot::SpectrogramPlot(QWidget *parent) :
     myColorMap = new CustomColorMap(CustomColorMap::JET);
 
     mySpectrogramPlot = new QwtPlotSpectrogram();
-    mySpectrogramPlot->setRenderThreadCount(0); //use system specific thread count
+    mySpectrogramPlot->setRenderThreadCount(1); //use system specific thread count
     mySpectrogramPlot->setColorMap(myColorMap);
     //mySpectrogramPlot->setCachePolicy(QwtPlotRasterItem::PaintCache);
     mySpectrogramPlot->attach(this);

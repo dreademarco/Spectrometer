@@ -28,23 +28,24 @@ void SpectrogramData<T>::addData(T* sampleData){
 
 template <typename T>
 void SpectrogramData<T>::fastAddDataSectionMemCpy(CircularArray2DSpectrumThreaded<T> *sourceDataBlock, int copySize){
-    //calculate cells to copy over
-    int cellsToCopy = copySize * sourceDataBlock->getChannelCount();
+    sourceDataBlock->popSampleSectionFast(copySize,this->dataArray);
+//    //calculate cells to copy over
+//    int cellsToCopy = copySize * sourceDataBlock->getChannelCount();
 
-    //get byte read offset from source
-    int sourceReadIdx = sourceDataBlock->getCurrentSampleReadIndex()+1;
-    int cellsRead = sourceDataBlock->getChannelCount()*sourceReadIdx;
+//    //get byte read offset from source
+//    int sourceReadIdx = sourceDataBlock->getCurrentSampleReadIndex()+1;
+//    int cellsRead = sourceDataBlock->getChannelCount()*sourceReadIdx;
 
-    //get byte write offset from here
-    int destWriteIdx = this->dataArray->getCurrentSampleWriteIndex();
-    int cellsWritten = sourceDataBlock->getChannelCount()*destWriteIdx;
+//    //get byte write offset from here
+//    int destWriteIdx = this->dataArray->getCurrentSampleWriteIndex();
+//    int cellsWritten = sourceDataBlock->getChannelCount()*destWriteIdx;
 
-    memcpy(&this->dataArray->data[cellsWritten], &sourceDataBlock->data[cellsRead], cellsToCopy * sizeof(T));
+//    memcpy(&this->dataArray->data[cellsWritten], &sourceDataBlock->data[cellsRead], cellsToCopy * sizeof(T));
 
-    for (int i = 0; i < copySize; ++i) {
-        this->dataArray->incrementWriteIndex();
-        sourceDataBlock->incrementReadIndex();
-    }
+//    for (int i = 0; i < copySize; ++i) {
+//        this->dataArray->incrementWriteIndex();
+//        sourceDataBlock->incrementReadIndex();
+//    }
 }
 
 template <typename T>
@@ -72,15 +73,15 @@ void SpectrogramData<T>::resetData(){
 
 template <typename T>
 double SpectrogramData<T>::value( double x, double y ) const
-{    
+{       
     int sample_idx = (int) x;
     int channel_idx = (int) y;
-    sample_idx = sample_idx + dataArray->getCurrentSampleReadIndex(); //since ReadIdx might have moved
+    sample_idx = sample_idx + dataArray->getCurrentSampleReadIndex() + 1; //since ReadIdx might have moved (and +1 because we always need to look at the next location)
     if(sample_idx>=dataArray->getSampleCount()){
         sample_idx = sample_idx - dataArray->getSampleCount();
     }
     //return (double) dataArray->at(channel_idx,sample_idx);
-    return (double) dataArray->at(channel_idx,this->dataArray->getSampleCount()-sample_idx);
+    return (double) dataArray->at(channel_idx,(this->dataArray->getSampleCount()-1)-sample_idx); //to reverse the plot
 }
 
 template class SpectrogramData<int>;

@@ -3,6 +3,7 @@
 #include <array2dspectrum.h>
 #include <iostream>
 #include <stdio.h>
+#include <string.h>
 
 template <typename T>
 class CircularArray2DSpectrum : public Array2DSpectrum<T>
@@ -12,9 +13,13 @@ public:
     CircularArray2DSpectrum(int channels, int samples);
     ~CircularArray2DSpectrum();
     void pushSample(T* sampleData);
+    //void pushSampleMemCpy(T* sampleData);
     void pushSpectrum(Array2DSpectrum<T>);
+    //void pushSpectrumMemCpy(Array2DSpectrum<T> spectrumData);
     T* popSample();
     void popSampleSection(int length, Array2DSpectrum<T> *outputSection);
+    void popSampleSectionFast(int length, Array2DSpectrum<T> *outputSection);
+    void popSampleSectionFast(int length, CircularArray2DSpectrum<T> *outputSection);
 
     void incrementReadIndex();
     void decrementReadIndex();

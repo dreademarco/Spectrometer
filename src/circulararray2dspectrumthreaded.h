@@ -10,8 +10,9 @@ public:
     ~CircularArray2DSpectrumThreaded();
     int getNumFreeSpaces();
     int getNumUsedSpaces();
-    void fastPushSample(T* sampleData);
+    void writeSample(T* sampleData);
     void fastPopBlockSamples(Array2DSpectrum<T> *outputBlock,int blockSize);
+    void increaseFreeSpaces();
 
 private:
     int numberUsedSpaces;

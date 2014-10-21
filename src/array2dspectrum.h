@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <iostream>
 #include <stdio.h>
+#include <string.h>
 
 /*
  * Represtents a 2D Array in relation to a Spectrum. Logically, the array is stored as a single vector for speed.
@@ -35,7 +36,10 @@ public:
     void setSample(int sampleIdx, T* channelData);
     void setChannel(int channelIdx, T* sampleData);
 
+    void loadMemCpy(Array2DSpectrum<T> *sourceData);
+
     Array2DSpectrum<T> getSamplesSection(int sample_offset, int n_samples);
+    //void getSamplesSectionFast(int sample_offset, int n_samples, Array2DSpectrum<T> *output);
     Array2DSpectrum<T> getChannelsSection(int channel_offset, int n_channels);
     Array2DSpectrum<T> transpose();
 

@@ -4,6 +4,7 @@
 #include <qwt_interval.h>
 #include <iostream>
 #include <stdio.h>
+#include <math.h>
 
 #include "array2dworker.h"
 #include "circulararray2dworker.h"

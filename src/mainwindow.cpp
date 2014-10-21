@@ -6,8 +6,8 @@
 using namespace std;
 
 CircularArray2DWorker<float> *dataBlock;
-//CircularArray2DWorkerSafe<float> *safeDataBlock;
 CircularArray2DSpectrumThreaded<float> *safeDataBlock;
+CircularArray2DSpectrumThreaded<float> *outputDataBlock;
 SpectrogramData<float> *mySpectData;
 CircularArray2DSpectrum<float> *tempColumns;
 CircularArray2DWorker<float> *test;
@@ -25,15 +25,30 @@ MainWindow::MainWindow(QWidget *parent) :
     //initialize dataBlock
     //safeDataBlock = new CircularArray2DWorkerSafe<float>(CircularArray2DWorkerSafe<float>::WRITER,false,freqBins,samplesSize);
     safeDataBlock = new CircularArray2DSpectrumThreaded<float>(freqBins,samplesSize);
+    outputDataBlock = new CircularArray2DSpectrumThreaded<float>(freqBins,samplesSize);
 
     //initialize SpectrogramData
     tempColumns = new CircularArray2DSpectrum<float>(freqBins,spectSize);
     mySpectData = new SpectrogramData<float>(tempColumns,freqBins,spectSize);
 
+    int placements = 0;
+    while(placements<samplesSize){
+        float sampleData[freqBins];
+        for (int j = 0; j < freqBins; ++j) {
+            //slightly faster simple value (182 Mhz)
+            //sampleData[j]=(float)j/freqBins; //constant values along frequency
+            sampleData[j]=(float)placements/samplesSize; //constant values along samples
+        }
+        safeDataBlock->writeSample(sampleData);
+        ++placements;
+    }
+
     // make producer thread
     //unsafeProducer_thread = new ProducerUnsafe(this,safeDataBlock);
     // make consumer thread
     unsafeConsumer_thread = new ConsumerUnsafe(this, safeDataBlock, mySpectData, ui->plotWidget);
+    // make pipeline_thread
+    //pipeline_thread = new Pipeline(this, safeDataBlock, outputDataBlock, block, 2);
 
     // connect signal/slot for SpectrogramPlot
     connect(unsafeConsumer_thread, SIGNAL(spectDataReceived()),this,SLOT(spectrogramPlotUpdate()));
@@ -85,4 +100,5 @@ void MainWindow::on_startPushButton_clicked()
     // threads start
     //unsafeProducer_thread->start();
     unsafeConsumer_thread->start();
+    //pipeline_thread->start();
 }

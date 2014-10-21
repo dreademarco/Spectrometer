@@ -21,18 +21,17 @@ ConsumerUnsafe::ConsumerUnsafe(QObject *parent, CircularArray2DSpectrumThreaded<
 void ConsumerUnsafe::run()
 {
     int placements = 0;
-    while(placements<samplesSize){
-        float sampleData[freqBins];
-        for (int j = 0; j < freqBins; ++j) {
-            //slightly faster simple value (182 Mhz)
-            //sampleData[j]=(float)j/freqBins; //constant values along frequency
+//    while(placements<samplesSize){
+//        float sampleData[freqBins];
+//        for (int j = 0; j < freqBins; ++j) {
+//            //slightly faster simple value (182 Mhz)
+//            //sampleData[j]=(float)j/freqBins; //constant values along frequency
 
-            sampleData[j]=(float)placements/samplesSize; //constant values along samples
-        }
-        dataBlock->fastPushSample(sampleData);
-        ++placements;
-    }
-
+//            sampleData[j]=(float)placements/samplesSize; //constant values along samples
+//        }
+//        dataBlock->writeSample(sampleData);
+//        ++placements;
+//    }
 
 
 
@@ -46,13 +45,13 @@ void ConsumerUnsafe::run()
     const long double sysTimeMS_start = sysTime*1000;
     for (int i = 0; i < overallSamples; i+=block) {
         mySpectrogramData->fastAddDataSectionMemCpy(dataBlock, block);
-        //mySpectrogramData->fastAddDataSection(dataBlock,block);
         placements+=block;
         if(placements % guiUpdateSize == 0){
+            //mySpectrogramData->dataArray->toString();
             myPlot->pushNewData(mySpectrogramData);
             emit spectDataReceived();
         }
-        //this->msleep(1);
+        //this->msleep(100);
     }
     //cout << "Producer pushed: " << placements << endl;
     const long double sysTime2 = time(0);

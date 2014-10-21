@@ -67,10 +67,10 @@ int Array2DSpectrum<T>::getLocation(int channel, int sample) const
 template <typename T>
 T Array2DSpectrum<T>::at(int channel, int sample)
 {
-    if(channel>getChannelCount()){
+    if(channel>=getChannelCount()){
         return -1;
     }
-    else if(sample>getSampleCount()){
+    else if(sample>=getSampleCount()){
         return -1;
     }else{
         return data[getLocation(channel,sample)];
@@ -149,6 +149,12 @@ Array2DSpectrum<T> Array2DSpectrum<T>::getChannelsSection(int channel_offset, in
         channelsSection.setChannel(channelIdx,getSamplesForChannel(channelIdx));
     }
     return channelsSection;
+}
+
+template <typename T>
+void Array2DSpectrum<T>::loadMemCpy(Array2DSpectrum<T> *sourceData){
+    int cellsToCopy = channels*samples;
+    memcpy(&this->data[0],&sourceData->data[0],cellsToCopy*sizeof(T));
 }
 
 template <typename T>
