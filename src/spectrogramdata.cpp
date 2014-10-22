@@ -28,30 +28,13 @@ void SpectrogramData<T>::addData(T* sampleData){
 
 template <typename T>
 void SpectrogramData<T>::fastAddDataSectionMemCpy(CircularArray2DSpectrumThreaded<T> *sourceDataBlock, int copySize){
-    sourceDataBlock->popSampleSectionFast(copySize,this->dataArray);
-//    //calculate cells to copy over
-//    int cellsToCopy = copySize * sourceDataBlock->getChannelCount();
-
-//    //get byte read offset from source
-//    int sourceReadIdx = sourceDataBlock->getCurrentSampleReadIndex()+1;
-//    int cellsRead = sourceDataBlock->getChannelCount()*sourceReadIdx;
-
-//    //get byte write offset from here
-//    int destWriteIdx = this->dataArray->getCurrentSampleWriteIndex();
-//    int cellsWritten = sourceDataBlock->getChannelCount()*destWriteIdx;
-
-//    memcpy(&this->dataArray->data[cellsWritten], &sourceDataBlock->data[cellsRead], cellsToCopy * sizeof(T));
-
-//    for (int i = 0; i < copySize; ++i) {
-//        this->dataArray->incrementWriteIndex();
-//        sourceDataBlock->incrementReadIndex();
-//    }
+    sourceDataBlock->fastPopBlockSamples(this->dataArray,copySize);
 }
 
 template <typename T>
 void SpectrogramData<T>::fastAddDataSection(CircularArray2DSpectrumThreaded<T> *sourceDataBlock,int copySize){
     for (int i = 0; i < copySize; ++i) {
-        this->addData(sourceDataBlock->popSample());
+        this->addData(sourceDataBlock->loadSample());
     }
 }
 

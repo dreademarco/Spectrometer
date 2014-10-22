@@ -11,6 +11,7 @@
 #include "circulararray2dworkerthreaded.h"
 #include "circulararray2dspectrumthreaded.h"
 #include "pipeline.h"
+#include "plotter.h"
 #include <QMainWindow>
 
 namespace Ui {
@@ -35,6 +36,7 @@ private:
     ProducerUnsafe *unsafeProducer_thread;
     ConsumerUnsafe *unsafeConsumer_thread;
     Pipeline *pipeline_thread;
+    Plotter *plotter_thread;
 
 public slots:
     void onBufferValueChanged(int);

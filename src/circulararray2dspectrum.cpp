@@ -91,27 +91,12 @@ void CircularArray2DSpectrum<T>::pushSpectrum(Array2DSpectrum<T> spectrumData)
     }
 }
 
-//template <typename T>
-//void CircularArray2DSpectrum<T>::pushSpectrumMemCpy(Array2DSpectrum<T> spectrumData){
-//    for (int i = 0; i < spectrumData.getSampleCount(); ++i) {
-//        this->pushSampleMemCpy(spectrumData.getChannelsForSample(i));
-//    }
-//}
-
 template <typename T>
 void CircularArray2DSpectrum<T>::pushSample(T* sampleData)
 {
     this->setSample(currentSampleWriteIdx,sampleData);
     this->incrementWriteIndex();
 }
-
-//template <typename T>
-//void CircularArray2DSpectrum<T>::pushSampleMemCpy(T* sampleData){
-//    int cellsToCopy = this->getChannelCount();
-//    int cellsWritten = this->getCurrentSampleWriteIndex()*this->getChannelCount();
-//    memcpy(&this->data[cellsWritten+1],&sampleData,cellsToCopy*sizeof(T));
-//    this->incrementWriteIndex();
-//}
 
 template <typename T>
 T* CircularArray2DSpectrum<T>::popSample()
@@ -124,7 +109,7 @@ T* CircularArray2DSpectrum<T>::popSample()
  * Pops section from current reading index
  */
 template <typename T>
-void CircularArray2DSpectrum<T>::popSampleSection(int length, Array2DSpectrum<T> *outputSection)
+void CircularArray2DSpectrum<T>::popSpectrum(int length, Array2DSpectrum<T> *outputSection)
 {
     for (int i = 0; i < length; ++i) {
         outputSection->setSample(i,this->popSample());
@@ -132,7 +117,7 @@ void CircularArray2DSpectrum<T>::popSampleSection(int length, Array2DSpectrum<T>
 }
 
 template <typename T>
-void CircularArray2DSpectrum<T>::popSampleSectionFast(int length, Array2DSpectrum<T> *outputSection){
+void CircularArray2DSpectrum<T>::popSpectrumFast(int length, Array2DSpectrum<T> *outputSection){
     //Array2DSpectrum<T> samplesSection(channels,n_samples);
     int cellsToCopy = this->getChannelCount();
     int cellsReadIdx = 0;
@@ -151,17 +136,29 @@ void CircularArray2DSpectrum<T>::popSampleSectionFast(int length, Array2DSpectru
 }
 
 template <typename T>
-void CircularArray2DSpectrum<T>::popSampleSectionFast(int length, CircularArray2DSpectrum<T> *outputSection){
+void CircularArray2DSpectrum<T>::popSpectrumFast(int length, CircularArray2DSpectrum<T> *outputSection){
     int cellsToCopy = this->getChannelCount();
     int destinationWrittenCells = 0;
     int sourceReadCells = 0;
-
     for (int i = 0; i < length; ++i) {
         this->incrementReadIndex();
         destinationWrittenCells = cellsToCopy*outputSection->getCurrentSampleWriteIndex();
         sourceReadCells = cellsToCopy*getCurrentSampleReadIndex();        
         memcpy(&outputSection->data[destinationWrittenCells],&this->data[sourceReadCells],cellsToCopy*sizeof(T));
         outputSection->incrementWriteIndex();
+    }
+}
+
+template <typename T>
+void CircularArray2DSpectrum<T>::pushSpectrumFast(int length, Array2DSpectrum<T> *inputSection){
+    int cellsToCopy = inputSection->getChannelCount();
+    int cellsReadIdx = 0;
+    int cellsWriteIdx = 0;
+    for (int i = 0; i < length; ++i) {
+        cellsWriteIdx = this->getCurrentSampleWriteIndex()*cellsToCopy;
+        cellsReadIdx = cellsToCopy*i;
+        memcpy(&this->data[cellsWriteIdx],&inputSection->data[cellsReadIdx],cellsToCopy*sizeof(T));
+        this->incrementWriteIndex();
     }
 }
 

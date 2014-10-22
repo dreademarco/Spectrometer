@@ -26,7 +26,8 @@ SOURCES += main.cpp\
     array2dspectrum.cpp \
     circulararray2dspectrum.cpp \
     circulararray2dspectrumthreaded.cpp \
-    pipeline.cpp
+    pipeline.cpp \
+    plotter.cpp
 
 HEADERS  += mainwindow.h \
     array2dworker.h \
@@ -44,7 +45,8 @@ HEADERS  += mainwindow.h \
     array2dspectrum.h \
     circulararray2dspectrum.h \
     circulararray2dspectrumthreaded.h \
-    pipeline.h
+    pipeline.h \
+    plotter.h
 
 FORMS    += mainwindow.ui
 

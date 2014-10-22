@@ -12,14 +12,17 @@ public:
     CircularArray2DSpectrum();
     CircularArray2DSpectrum(int channels, int samples);
     ~CircularArray2DSpectrum();
-    void pushSample(T* sampleData);
-    //void pushSampleMemCpy(T* sampleData);
-    void pushSpectrum(Array2DSpectrum<T>);
-    //void pushSpectrumMemCpy(Array2DSpectrum<T> spectrumData);
+
+    //slower methods
     T* popSample();
-    void popSampleSection(int length, Array2DSpectrum<T> *outputSection);
-    void popSampleSectionFast(int length, Array2DSpectrum<T> *outputSection);
-    void popSampleSectionFast(int length, CircularArray2DSpectrum<T> *outputSection);
+    void popSpectrum(int length, Array2DSpectrum<T> *outputSection);
+    void pushSample(T* sampleData);
+    void pushSpectrum(Array2DSpectrum<T>);    
+
+    //faster methods
+    void popSpectrumFast(int length, Array2DSpectrum<T> *outputSection);
+    void popSpectrumFast(int length, CircularArray2DSpectrum<T> *outputSection);
+    void pushSpectrumFast(int length, Array2DSpectrum<T> *inputSection);
 
     void incrementReadIndex();
     void decrementReadIndex();
