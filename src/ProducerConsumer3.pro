@@ -50,5 +50,8 @@ HEADERS  += mainwindow.h \
 
 FORMS    += mainwindow.ui
 
+QMAKE_CXXFLAGS+= -fopenmp
+QMAKE_LFLAGS +=  -fopenmp
+
 INCLUDEPATH += /usr/local/qwt-6.1.1/include #Added this
 LIBS += -L/usr/local/qwt-6.1.1/lib -lqwt #Added this

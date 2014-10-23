@@ -43,6 +43,8 @@ public:
     Array2DSpectrum<T> getChannelsSection(int channel_offset, int n_channels);
     Array2DSpectrum<T> transpose();
 
+    void integration(int integrationFactor, Array2DSpectrum<T> *output);
+
     void toString();
 
     T *data;

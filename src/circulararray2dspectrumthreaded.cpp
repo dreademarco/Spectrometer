@@ -39,23 +39,29 @@ T* CircularArray2DSpectrumThreaded<T>::loadSample(){
 template <typename T>
 void CircularArray2DSpectrumThreaded<T>::fastPopBlockSamples(Array2DSpectrum<T> *outputBlock, int blockSize){
     this->popSpectrumFast(blockSize,outputBlock);
+    mutex.lock();
     numberFreeSpaces = numberFreeSpaces + blockSize;
     numberUsedSpaces = numberUsedSpaces - blockSize;
+    mutex.unlock();
 }
 
 
 template <typename T>
 void CircularArray2DSpectrumThreaded<T>::fastPopBlockSamples(CircularArray2DSpectrum<T> *outputBlock, int blockSize){
     this->popSpectrumFast(blockSize,outputBlock);
+    mutex.lock();
     numberFreeSpaces = numberFreeSpaces + blockSize;
     numberUsedSpaces = numberUsedSpaces - blockSize;
+    mutex.unlock();
 }
 
 template <typename T>
 void CircularArray2DSpectrumThreaded<T>::fastPushBlockSamples(Array2DSpectrum<T> *inputBlock, int blockSize){
     this->pushSpectrumFast(blockSize, inputBlock);
+    mutex.lock();
     numberUsedSpaces = numberUsedSpaces + blockSize;
     numberFreeSpaces = numberFreeSpaces - blockSize;
+    mutex.unlock();
 }
 
 template <typename T>

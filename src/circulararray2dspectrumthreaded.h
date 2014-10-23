@@ -1,6 +1,7 @@
 #ifndef CIRCULARARRAY2DSPECTRUMTHREADED_H
 #define CIRCULARARRAY2DSPECTRUMTHREADED_H
 #include "circulararray2dspectrum.h"
+#include <QMutex>
 
 template <typename T>
 class CircularArray2DSpectrumThreaded : public CircularArray2DSpectrum<T>
@@ -20,6 +21,7 @@ public:
 private:
     int numberUsedSpaces;
     int numberFreeSpaces;
+    QMutex mutex;
 };
 
 #endif // CIRCULARARRAY2DSPECTRUMTHREADED_H

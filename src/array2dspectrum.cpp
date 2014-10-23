@@ -67,28 +67,21 @@ int Array2DSpectrum<T>::getLocation(int channel, int sample) const
 template <typename T>
 T Array2DSpectrum<T>::at(int channel, int sample)
 {
-    if(channel>=getChannelCount()){
-        return -1;
-    }
-    else if(sample>=getSampleCount()){
-        return -1;
-    }else{
-        return data[getLocation(channel,sample)];
-    }
+//    if(channel>=getChannelCount()){
+//        return -1;
+//    }
+//    else if(sample>=getSampleCount()){
+//        return -1;
+//    }else{
+//        return data[getLocation(channel,sample)];
+//    }
+    return data[getLocation(channel,sample)];
 }
 
 template <typename T>
 T Array2DSpectrum<T>::at(int channel, int sample) const
 {
     return at(channel,sample);
-//    if(channel>getChannelCount()){
-//        return -1;
-//    }
-//    else if(sample>getSampleCount()){
-//        return -1;
-//    }else{
-//        return data[getLocation(channel,sample)];
-//    }
 }
 
 template <typename T>
@@ -167,6 +160,42 @@ Array2DSpectrum<T> Array2DSpectrum<T>::transpose(){
     }
     return transposed;
 }
+
+template <typename T>
+void Array2DSpectrum<T>::integration(int integrationFactor, Array2DSpectrum<T> *output){
+    int totalSize = samples*channels;
+    int newSize = totalSize/integrationFactor;
+    float integration_mean;
+    for (int i = 0; i < newSize; ++i) {
+        integration_mean = 0;
+        for (int j = 0; j < integrationFactor; ++j) {
+            integration_mean = integration_mean + this->data[i+(j*channels)];
+        }
+        integration_mean = integration_mean/2;
+        output->data[i] = integration_mean;
+    }
+}
+
+//template <typename T>
+//void Array2DSpectrum<T>::integration(int integrationFactor, Array2DSpectrum<T> *output){
+//    int outputChannelCounter = 0;
+//    int outputSampleCounter = 0;
+//    float integration_mean;
+//    int new_size = samples/integrationFactor;
+//    for (int i = 0; i < channels; ++i) {
+//        for (int j = 0; j < new_size; ++j) {
+//            integration_mean = 0;
+//            for (int k = 0; k < integrationFactor; ++k) {
+//                integration_mean = integration_mean + at(i,(j*integrationFactor)+k);
+//            }
+//            integration_mean = integration_mean/integrationFactor;
+//            output->set(outputChannelCounter,outputSampleCounter,integration_mean);
+//            ++outputSampleCounter;
+//        }
+//        outputSampleCounter = 0;
+//        ++outputChannelCounter;
+//    }
+//}
 
 template <typename T>
 void Array2DSpectrum<T>::toString(){
