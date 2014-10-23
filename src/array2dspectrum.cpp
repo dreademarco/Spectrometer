@@ -163,8 +163,7 @@ Array2DSpectrum<T> Array2DSpectrum<T>::transpose(){
 
 template <typename T>
 void Array2DSpectrum<T>::integration(int integrationFactor, Array2DSpectrum<T> *output){
-    int totalSize = samples*channels;
-    int loop_size = (totalSize/integrationFactor)/channels;
+    int loop_size = samples/integrationFactor;
     float integration_mean;
     int offset = 0;
     int loc_counter = 0;
