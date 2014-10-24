@@ -1,7 +1,7 @@
 #ifndef PIPELINE_H
 #define PIPELINE_H
 
-#include <QThread>
+#include <QObject>
 #include <QTime>
 #include <QVector>
 #include <sys/time.h>
@@ -10,17 +10,20 @@
 #include "stdio.h"
 #include "circulararray2dspectrumthreaded.h"
 
-class Pipeline : public QThread
+class Pipeline : public QObject
 {
     Q_OBJECT
 public:
-    Pipeline(QObject *parent = 0, CircularArray2DSpectrumThreaded<float> *sourceDataBlock = NULL, CircularArray2DSpectrumThreaded<float> *outputDataBlock = NULL, int chunkSize = 0, int integrationFactor = 1);
+    Pipeline(CircularArray2DSpectrumThreaded<float> *sourceDataBlock = NULL, CircularArray2DSpectrumThreaded<float> *outputDataBlock = NULL, int chunkSize = 0, int integrationFactor = 1, QObject *parent = 0);
     ~Pipeline();
-    void run();
-
     void fastLoadDataInWorkSpaceMemCpy();
     void fastLoadDataToOutputStreamMemCpy();
     void doIntegration();
+
+public slots:
+    void start();
+
+
 
 private:
     CircularArray2DSpectrumThreaded<float> *sourceStream;
@@ -31,6 +34,7 @@ private:
     int integrationFactor;
     int placements;
     bool loop;
+    int samplesToGather;
 };
 
 #endif // PIPELINE_H

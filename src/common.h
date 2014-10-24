@@ -3,6 +3,7 @@
 
 #include <QSemaphore>
 #include <QVector>
+#include <QThread>
 #include "myConstants.h"
 
 typedef QVector<QVector<float> > TwoDQVector;

@@ -1,7 +1,7 @@
 #ifndef PLOTTER_H
 #define PLOTTER_H
 
-#include <QThread>
+#include <QObject>
 #include <QTime>
 #include <QVector>
 #include <common.h>
@@ -11,12 +11,13 @@
 #include "circulararray2dspectrumthreaded.h"
 #include "spectrogramplot.h"
 
-class Plotter : public QThread
+class Plotter : public QObject
 {
     Q_OBJECT
 public:
-    Plotter(QObject *parent = 0, CircularArray2DSpectrumThreaded<float> *sourceDataBlock = NULL, int chunkSize = 0, int integrationFactor = 1, SpectrogramPlot *spectrogramPlot = NULL);
-    void run();
+    Plotter(CircularArray2DSpectrumThreaded<float> *sourceDataBlock = NULL, int chunkSize = 0, int integrationFactor = 1, SpectrogramPlot *spectrogramPlot = NULL, QObject *parent = 0);
+public slots:
+    void start();
 
 signals:
     void readyForPlot();

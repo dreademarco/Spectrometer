@@ -1,15 +1,17 @@
 #include "pipeline.h"
 using namespace std;
 
-Pipeline::Pipeline(QObject *parent, CircularArray2DSpectrumThreaded<float> *sourceDataBlock, CircularArray2DSpectrumThreaded<float> *outputDataBlock, int chunkSize, int integrationFactor) : QThread(parent){
+//Pipeline::Pipeline(CircularArray2DSpectrumThreaded<float> *sourceDataBlock, CircularArray2DSpectrumThreaded<float> *outputDataBlock, int chunkSize, int integrationFactor) : QThread(parent)
+Pipeline::Pipeline(CircularArray2DSpectrumThreaded<float> *sourceDataBlock, CircularArray2DSpectrumThreaded<float> *outputDataBlock, int chunkSize, int integrationFactor, QObject *parent) : QObject(parent){
     this->sourceStream = sourceDataBlock;
     this->outputStream = outputDataBlock;
     this->chunkSize = chunkSize;
-    this->inputWorkspace = new Array2DSpectrum<float>(sourceDataBlock->getChannelCount(),chunkSize);
-    this->outputWorkspace = new Array2DSpectrum<float>(sourceDataBlock->getChannelCount(),chunkSize/integrationFactor);
     this->integrationFactor = integrationFactor;
     this->placements = 0;
     this->loop = true;
+    this->samplesToGather = chunkSize*integrationfactor;
+    this->inputWorkspace = new Array2DSpectrum<float>(sourceDataBlock->getChannelCount(),samplesToGather);
+    this->outputWorkspace = new Array2DSpectrum<float>(sourceDataBlock->getChannelCount(),samplesToGather/integrationFactor);
 }
 
 Pipeline::~Pipeline()
@@ -18,7 +20,7 @@ Pipeline::~Pipeline()
     delete outputWorkspace;
 }
 
-void Pipeline::run()
+void Pipeline::start()
 {
     timeval t1, t2;
     double elapsedTime;
@@ -44,22 +46,31 @@ void Pipeline::run()
     elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;      // sec to ms
     elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;   // us to ms
     cout << "Pipeline elasped time: " << elapsedTime << " ms" << endl;
-    float totalSeconds = elapsedTime/1000.0;
-    if(totalSeconds>0){
-        float datarate = (((samplesSize*freqBins)/totalSeconds)/1000000);
+    if(elapsedTime>0){
+        float datarate = ((((samplesSize*freqBins)/elapsedTime)/1000000))*1000.0;
         cout << "Pipeline Data rate est.: " << datarate << " Mhz" << endl;
     }else{
         cout << "Pipeline Data rate est.: n/a"  << " Mhz" << endl;
     }
+
+
+//    float totalSeconds = elapsedTime/1000.0;
+
+//    if(totalSeconds>0){
+//        float datarate = (((samplesSize*freqBins)/totalSeconds)/1000000);
+//        cout << "Pipeline Data rate est.: " << datarate << " Mhz" << endl;
+//    }else{
+//        cout << "Pipeline Data rate est.: n/a"  << " Mhz" << endl;
+//    }
 }
 
 void Pipeline::fastLoadDataInWorkSpaceMemCpy(){
     bool copyMade = false; //do not return from this function until a copy has been made to memory
     while(!copyMade){
-        if(sourceStream->getNumUsedSpaces()>=chunkSize){
-            sourceStream->fastPopBlockSamples(inputWorkspace,chunkSize);
+        if(sourceStream->getNumUsedSpaces()>=samplesToGather){
+            sourceStream->fastPopBlockSamples(inputWorkspace,samplesToGather);
             copyMade = true;
-            placements = placements + (chunkSize/integrationFactor);
+            placements = placements + (samplesToGather/integrationFactor);
         }
     }
 }
@@ -85,5 +96,5 @@ void Pipeline::doIntegration(){
 }
 
 void Pipeline::fastLoadDataToOutputStreamMemCpy(){
-    outputStream->fastPushBlockSamples(outputWorkspace,chunkSize/integrationFactor);
+    outputStream->fastPushBlockSamples(outputWorkspace,samplesToGather/integrationFactor);
 }

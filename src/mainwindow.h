@@ -33,10 +33,14 @@ private:
     Ui::MainWindow *ui;
     //Producer *producer_thread;
     //Consumer *consumer_thread;
-    ProducerUnsafe *unsafeProducer_thread;
-    ConsumerUnsafe *unsafeConsumer_thread;
-    Pipeline *pipeline_thread;
-    Plotter *plotter_thread;
+    //ProducerUnsafe *unsafeProducer_thread;
+    //ConsumerUnsafe *unsafeConsumer_thread;
+    QThread *pipeline_thread;
+    QThread *plotter_thread;
+    Pipeline *pipeline;
+    Plotter *plotter;
+    //Pipeline *pipeline_thread;
+    //Plotter *plotter_thread;
 
 public slots:
     void onBufferValueChanged(int);

@@ -42,14 +42,21 @@ MainWindow::MainWindow(QWidget *parent) :
     //initialize pipeline datablock
     pipelineSourceDataBlock = new CircularArray2DSpectrumThreaded<float>(freqBins,samplesSize);
 
-    // make pipeline thread
-    pipeline_thread = new Pipeline(this, rawSourceDataBlock, pipelineSourceDataBlock, block, 2);
+    pipeline_thread = new QThread; // First thread
+    plotter_thread = new QThread; // Second thread
+
+    // make pipeline thread    
+    //pipeline_thread = new Pipeline(this, rawSourceDataBlock, pipelineSourceDataBlock, block, integrationfactor);
+    pipeline = new Pipeline(rawSourceDataBlock, pipelineSourceDataBlock, block, integrationfactor);
+    connect(pipeline_thread, SIGNAL(started()), pipeline, SLOT(start()));
 
     // make plotter thread
-    plotter_thread = new Plotter(this,pipelineSourceDataBlock,block,2,ui->plotWidget);
+    //lotter_thread = new Plotter(this,pipelineSourceDataBlock,block,integrationfactor,ui->plotWidget);
+    plotter = new Plotter(pipelineSourceDataBlock,block,integrationfactor,ui->plotWidget);
+    connect(plotter_thread, SIGNAL(started()), plotter, SLOT(start()));
 
     // connect signal/slot for SpectrogramPlot
-    connect(plotter_thread, SIGNAL(readyForPlot()),this,SLOT(spectrogramPlotUpdate()));
+    connect(plotter, SIGNAL(readyForPlot()),this,SLOT(spectrogramPlotUpdate()));
 
 //    //initialize dataBlock
 //    //safeDataBlock = new CircularArray2DWorkerSafe<float>(CircularArray2DWorkerSafe<float>::WRITER,false,freqBins,samplesSize);
@@ -129,6 +136,9 @@ void MainWindow::on_startPushButton_clicked()
     // threads start
     //unsafeProducer_thread->start();
     //unsafeConsumer_thread->start();
+    plotter->moveToThread(plotter_thread);
+    pipeline->moveToThread(pipeline_thread);
     plotter_thread->start();
     pipeline_thread->start();
+
 }

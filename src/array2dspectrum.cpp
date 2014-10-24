@@ -183,28 +183,56 @@ Array2DSpectrum<T> Array2DSpectrum<T>::transpose(){
 //}
 
 template <typename T>
-void Array2DSpectrum<T>::integration(int integrationFactor, Array2DSpectrum<T> *output){
-    int loop_size = samples/integrationFactor;
-    float integration_mean;
-    int offset = 0;
-    int loc_counter = 0;
-    int offset_factor = integrationFactor*channels;
-    for (int i = 0; i < loop_size; ++i) {
-        offset = i*offset_factor;
-        for (int j = 0; j < channels; ++j) {
-            integration_mean = 0;
-            //cout << (0*channels)+j+offset << "\t" << (1*channels)+j+offset << endl;
-            for (int k = 0; k < integrationFactor; ++k) {
-                integration_mean = integration_mean + this->data[(k*channels)+j+offset];
+void Array2DSpectrum<T>::integration(int integrationFactor, Array2DSpectrum<T> *output)
+{
+    T* output_array = (T*) __builtin_assume_aligned(output -> data, 16);
+    T* input_array  = (T*) __builtin_assume_aligned(this -> data, 16);
+    int globalSamples = (int) (samples / integrationFactor);
+
+    memset(output_array, 0, channels * globalSamples * sizeof(T));
+
+    // Loop over number of samples (integrated)
+    for (unsigned s = 0; s < globalSamples; s++)
+    {
+        // Loop over integration factor
+        for (unsigned i = 0; i < integrationFactor; i++)
+        {
+            // Loop over number of samples
+            int offset = channels * (s * integrationFactor + i);
+            for (unsigned c = 0; c < channels; c += 4)
+            {
+                output_array[s * channels + c]     += *(input_array + offset + c);
+                output_array[s * channels + c + 1] += *(input_array + offset + c + 1) ;
+                output_array[s * channels + c + 2] += *(input_array + offset + c + 2);
+                output_array[s * channels + c + 3] += *(input_array + offset + c + 3);
             }
-            //integration_mean = integration_mean / integrationFactor;
-            output->data[loc_counter] = integration_mean / integrationFactor;
-            ++loc_counter;
         }
     }
-//    cout << loc_counter << endl;
-//    cout << loop_size << endl;
-}
+ }
+
+//template <typename T>
+//void Array2DSpectrum<T>::integration(int integrationFactor, Array2DSpectrum<T> *output){
+//    int loop_size = samples/integrationFactor;
+//    float integration_mean;
+//    int offset = 0;
+//    int loc_counter = 0;
+//    int offset_factor = integrationFactor*channels;
+//    for (int i = 0; i < loop_size; ++i) {
+//        offset = i*offset_factor;
+//        for (int j = 0; j < channels; ++j) {
+//            integration_mean = 0;
+//            //cout << (0*channels)+j+offset << "\t" << (1*channels)+j+offset << endl;
+//            for (int k = 0; k < integrationFactor; ++k) {
+//                integration_mean = integration_mean + this->data[(k*channels)+j+offset];
+//            }
+//            //integration_mean = integration_mean / integrationFactor;
+//            output->data[loc_counter] = integration_mean / integrationFactor;
+//            ++loc_counter;
+//        }
+//    }
+////    cout << loc_counter << endl;
+////    cout << loop_size << endl;
+//}
 
 template <typename T>
 void Array2DSpectrum<T>::toString(){

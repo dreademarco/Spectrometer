@@ -1,7 +1,9 @@
 #include "plotter.h"
 using namespace std;
 
-Plotter::Plotter(QObject *parent, CircularArray2DSpectrumThreaded<float> *sourceDataBlock, int chunkSize, int integrationFactor, SpectrogramPlot *spectrogramPlot) : QThread(parent)
+
+//QObject *parent,
+Plotter::Plotter(CircularArray2DSpectrumThreaded<float> *sourceDataBlock, int chunkSize, int integrationFactor, SpectrogramPlot *spectrogramPlot, QObject *parent) : QObject(parent)
 {
     this->sourceStream = sourceDataBlock;
     this->chunkSize = chunkSize;
@@ -13,7 +15,7 @@ Plotter::Plotter(QObject *parent, CircularArray2DSpectrumThreaded<float> *source
     this->loop = true;
 }
 
-void Plotter::run()
+void Plotter::start()
 {
     timeval t1, t2;
     double elapsedTime;
