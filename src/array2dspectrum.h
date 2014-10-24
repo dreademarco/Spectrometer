@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <string.h>
+#include <omp.h>
 
 /*
  * Represtents a 2D Array in relation to a Spectrum. Logically, the array is stored as a single vector for speed.

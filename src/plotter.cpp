@@ -49,6 +49,7 @@ void Plotter::start()
     }else{
         cout << "Plotter Data rate est.: n/a"  << " Mhz" << endl;
     }
+    emit done();
 }
 
 void Plotter::fastLoadDataInSpectrogramMemCpy(){

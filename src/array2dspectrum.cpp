@@ -191,20 +191,30 @@ void Array2DSpectrum<T>::integration(int integrationFactor, Array2DSpectrum<T> *
 
     memset(output_array, 0, channels * globalSamples * sizeof(T));
 
+    int numThreads = 2;
+    omp_set_num_threads(numThreads);
+
     // Loop over number of samples (integrated)
-    for (unsigned s = 0; s < globalSamples; s++)
+    #pragma omp parallel shared(output_array, input_array)
     {
-        // Loop over integration factor
-        for (unsigned i = 0; i < integrationFactor; i++)
+        int threadId = omp_get_thread_num();
+        for (unsigned s = threadId * globalSamples / numThreads;
+                      s < (threadId + 1) * globalSamples / numThreads;
+                      s++)
+        //for (unsigned s = 0; s < globalSamples; s++)
         {
-            // Loop over number of samples
-            int offset = channels * (s * integrationFactor + i);
-            for (unsigned c = 0; c < channels; c += 4)
+            // Loop over integration factor
+            for (unsigned i = 0; i < integrationFactor; i++)
             {
-                output_array[s * channels + c]     += *(input_array + offset + c);
-                output_array[s * channels + c + 1] += *(input_array + offset + c + 1) ;
-                output_array[s * channels + c + 2] += *(input_array + offset + c + 2);
-                output_array[s * channels + c + 3] += *(input_array + offset + c + 3);
+                // Loop over number of samples
+                int offset = channels * (s * integrationFactor + i);
+                for (unsigned c = 0; c < channels; c += 4)
+                {
+                    output_array[s * channels + c]     += *(input_array + offset + c);
+                    output_array[s * channels + c + 1] += *(input_array + offset + c + 1) ;
+                    output_array[s * channels + c + 2] += *(input_array + offset + c + 2);
+                    output_array[s * channels + c + 3] += *(input_array + offset + c + 3);
+                }
             }
         }
     }

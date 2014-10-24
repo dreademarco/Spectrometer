@@ -21,6 +21,7 @@ public slots:
 
 signals:
     void readyForPlot();
+    void done();
 
 private:
     CircularArray2DSpectrumThreaded<float> *sourceStream;

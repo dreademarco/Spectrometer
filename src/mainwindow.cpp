@@ -57,6 +57,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // connect signal/slot for SpectrogramPlot
     connect(plotter, SIGNAL(readyForPlot()),this,SLOT(spectrogramPlotUpdate()));
+    connect(plotter, SIGNAL(done()),this,SLOT(terminatePlotter()));
+    connect(pipeline, SIGNAL(done()),this,SLOT(terminatePipeline()));
 
 //    //initialize dataBlock
 //    //safeDataBlock = new CircularArray2DWorkerSafe<float>(CircularArray2DWorkerSafe<float>::WRITER,false,freqBins,samplesSize);
@@ -106,11 +108,23 @@ MainWindow::~MainWindow()
     delete tempColumns;
     //delete safeDataBlock;
     delete dataBlock;
+    delete plotter_thread;
+    delete pipeline_thread;
+    delete plotter;
+    delete pipeline;
 }
 
 void MainWindow::spectrogramPlotUpdate()
 {
     ui->plotWidget->replot();
+}
+
+void MainWindow::terminatePlotter(){
+    plotter_thread->quit();
+}
+
+void MainWindow::terminatePipeline(){
+    pipeline_thread->quit();
 }
 
 void MainWindow::onBufferValueChanged(int bCount)
@@ -138,7 +152,6 @@ void MainWindow::on_startPushButton_clicked()
     //unsafeConsumer_thread->start();
     plotter->moveToThread(plotter_thread);
     pipeline->moveToThread(pipeline_thread);
-    plotter_thread->start();
+    //plotter_thread->start();
     pipeline_thread->start();
-
 }

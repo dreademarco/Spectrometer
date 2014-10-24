@@ -52,16 +52,7 @@ void Pipeline::start()
     }else{
         cout << "Pipeline Data rate est.: n/a"  << " Mhz" << endl;
     }
-
-
-//    float totalSeconds = elapsedTime/1000.0;
-
-//    if(totalSeconds>0){
-//        float datarate = (((samplesSize*freqBins)/totalSeconds)/1000000);
-//        cout << "Pipeline Data rate est.: " << datarate << " Mhz" << endl;
-//    }else{
-//        cout << "Pipeline Data rate est.: n/a"  << " Mhz" << endl;
-//    }
+    emit done();
 }
 
 void Pipeline::fastLoadDataInWorkSpaceMemCpy(){

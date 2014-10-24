@@ -47,6 +47,8 @@ public slots:
     void onProducerValueChanged(int);
     void onConsumerValueChanged(int);
     void spectrogramPlotUpdate();
+    void terminatePlotter();
+    void terminatePipeline();
 };
 
 #endif // MAINWINDOW_H

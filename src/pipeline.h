@@ -23,7 +23,8 @@ public:
 public slots:
     void start();
 
-
+signals:
+    void done();
 
 private:
     CircularArray2DSpectrumThreaded<float> *sourceStream;
