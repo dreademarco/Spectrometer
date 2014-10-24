@@ -25,14 +25,18 @@ int CircularArray2DSpectrumThreaded<T>::getNumUsedSpaces(){
 template <typename T>
 void CircularArray2DSpectrumThreaded<T>::writeSample(T* sampleData){
     this->pushSample(sampleData);
+    mutex.lock();
     numberUsedSpaces+=1;
     numberFreeSpaces-=1;
+    mutex.unlock();
 }
 
 template <typename T>
 T* CircularArray2DSpectrumThreaded<T>::loadSample(){
+    mutex.lock();
     numberFreeSpaces+=1;
     numberUsedSpaces-=1;
+    mutex.unlock();
     return this->popSample();
 }
 
@@ -66,9 +70,11 @@ void CircularArray2DSpectrumThreaded<T>::fastPushBlockSamples(Array2DSpectrum<T>
 
 template <typename T>
 void CircularArray2DSpectrumThreaded<T>::increaseFreeSpaces(){
+    mutex.lock();
     numberFreeSpaces = numberFreeSpaces+1;
     numberUsedSpaces = numberUsedSpaces-1;
     this->incrementReadIndex();
+    mutex.unlock();
 }
 
 template class CircularArray2DSpectrumThreaded<int>;

@@ -161,26 +161,49 @@ Array2DSpectrum<T> Array2DSpectrum<T>::transpose(){
     return transposed;
 }
 
+//template <typename T>
+//void Array2DSpectrum<T>::integration(int integrationFactor, Array2DSpectrum<T> *output){
+//    int channelSize = output->getChannelCount();
+//    float summed[channelSize];
+//    int loopsize = samples/integrationFactor;
+//    int offset = 0; int sub_offset = 0;
+//    for (int i = 0; i < loopsize; ++i) {
+//        for (int j = 0; j < integrationFactor; ++j) {
+//            sub_offset = j*channelSize;
+//            for (int k = 0; k < channelSize; ++k) {
+//                summed[k]=summed[k]+this->data[sub_offset+k];
+//            }
+//        }
+//        offset = i*channels;
+//        for (int k = 0; k < channelSize; ++k) {
+//            output->data[k+offset] = summed[k]/integrationFactor;
+//            summed[k] = 0;
+//        }
+//    }
+//}
+
 template <typename T>
 void Array2DSpectrum<T>::integration(int integrationFactor, Array2DSpectrum<T> *output){
     int loop_size = samples/integrationFactor;
     float integration_mean;
     int offset = 0;
     int loc_counter = 0;
+    int offset_factor = integrationFactor*channels;
     for (int i = 0; i < loop_size; ++i) {
-        offset = i*(integrationFactor*channels);
+        offset = i*offset_factor;
         for (int j = 0; j < channels; ++j) {
             integration_mean = 0;
             //cout << (0*channels)+j+offset << "\t" << (1*channels)+j+offset << endl;
             for (int k = 0; k < integrationFactor; ++k) {
                 integration_mean = integration_mean + this->data[(k*channels)+j+offset];
             }
-            integration_mean = integration_mean / integrationFactor;
-            output->data[loc_counter] = integration_mean;
+            //integration_mean = integration_mean / integrationFactor;
+            output->data[loc_counter] = integration_mean / integrationFactor;
             ++loc_counter;
         }
     }
-    //cout << loc_counter << endl;
+//    cout << loc_counter << endl;
+//    cout << loop_size << endl;
 }
 
 template <typename T>
