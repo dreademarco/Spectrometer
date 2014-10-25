@@ -211,10 +211,17 @@ void Array2DSpectrum<T>::integration(int integrationFactor, Array2DSpectrum<T> *
                 for (unsigned c = 0; c < channels; c += 4)
                 {
                     output_array[s * channels + c]     += *(input_array + offset + c);
-                    output_array[s * channels + c + 1] += *(input_array + offset + c + 1) ;
+                    output_array[s * channels + c + 1] += *(input_array + offset + c + 1);
                     output_array[s * channels + c + 2] += *(input_array + offset + c + 2);
                     output_array[s * channels + c + 3] += *(input_array + offset + c + 3);
                 }
+            }
+            for (unsigned c = 0; c < channels; c += 4)
+            {
+                output_array[s * channels + c] /= integrationFactor;
+                output_array[s * channels + c + 1]  /= integrationFactor;
+                output_array[s * channels + c + 2]  /= integrationFactor;
+                output_array[s * channels + c + 3]  /= integrationFactor;
             }
         }
     }
