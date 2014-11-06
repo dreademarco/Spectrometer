@@ -3,8 +3,9 @@
 #include <string.h>
 #include <sys/time.h>
 #include <math.h>
-
 #include <fftw3.h>
+#include <iostream>
+using namespace std;
 
 unsigned ntaps  = 8;
 unsigned nfft   = 1024;
@@ -22,6 +23,11 @@ void apply_ppf(fftwf_complex* fftw_input, fftwf_complex* fftw_output, float **wi
     // Loop over input blocks of size nfft
     for(unsigned b = 0; b < nsamp; b += nfft)
     {
+        // Adjust FIFOs
+        for(unsigned s = 0; s < nfft; s++)
+            for(unsigned i = ntaps - 1; i > 0; i--)
+                fifo[s][i] = fifo[s][i - 1];
+
         // Update FIFOs
         for(unsigned s = 0; s < nfft; s++)
                 fifo[s][0] = input[b + s];
@@ -49,11 +55,6 @@ void apply_ppf(fftwf_complex* fftw_input, fftwf_complex* fftw_output, float **wi
 
         // Copy fft'ed result to output buffer
         memcpy(output + b, fftw_output, sizeof(complex) * nfft);
-
-        // Adjust FIFOs
-        for(unsigned s = 0; s < nfft; s++)
-            for(unsigned i = ntaps - 1; i > 0; i--)
-                fifo[s][i] = fifo[s][i - 1];
     }
 }
 
@@ -63,7 +64,8 @@ void generate_data(complex *buffer)
     // Buffer length is nsamp
     for(unsigned i = 0; i < nsamp; i++)
     {
-        buffer[i].x = 5 * sin(2 * M_PI * i / 40.0) + sin(2 * M_PI * i / 128.0);
+        buffer[i].x = sin(2 * M_PI * i / 40.0) + sin(2 * M_PI * i / 128.0);
+        //cout << sin(2 * M_PI * i/40.0) << "\t" << sin(2 * M_PI * i/128.0) << endl;
         buffer[i].y = 0;
     }
 }
@@ -107,8 +109,8 @@ int main()
     fftwf_complex* in  = (fftwf_complex*) fftwf_malloc(ntaps * nfft * sizeof(fftwf_complex));
     fftwf_complex* out = (fftwf_complex*) fftwf_malloc(ntaps * nfft * sizeof(fftwf_complex));
     plan = fftwf_plan_dft_1d(nfft, in, out, FFTW_FORWARD, FFTW_MEASURE);
-    fftwf_free(in);
-    fftwf_free(out);
+    //fftwf_free(in);
+    //fftwf_free(out);
 
     // Create input and output buffers
     complex *input = (complex *) malloc(nsamp * sizeof(complex));
@@ -123,7 +125,7 @@ int main()
 
     // ------ Generate Fake Data ------
     generate_data(input);
-  //  dump_to_disk("input_data.dat", input, sizeof(complex), nsamp);
+    //dump_to_disk("input_data.dat", input, sizeof(complex), nsamp);
 
     // ------ Load weights ------
 //    char filename[256];
