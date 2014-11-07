@@ -52,7 +52,7 @@ void apply_ppf(fftwf_complex* fftw_input, fftwf_complex* fftw_output, float **wi
         }
 
         // TEMP - Override everything
-        memcpy(fftw_input, input + b, sizeof(complex) * nfft);
+        //memcpy(fftw_input, input + b, sizeof(complex) * nfft);
 
         // Apply fft
         fftwf_execute_dft(plan, fftw_input, fftw_output);
