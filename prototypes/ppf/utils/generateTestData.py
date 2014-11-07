@@ -5,14 +5,7 @@ import struct
 
 nsamp = 65536 * 64
 
-
-data = signal.chirp(np.array(range(nsamp)), 0, nsamp, 100, method='linear')
-data = np.array(data, dtype=complex)
-fp = open('generated_data.data','wb')
-#fp.write(struct.pack('f'*nsamp, *data), dtype=complex)
-fp.write(bytearray(data))
+data = np.array(signal.chirp(np.array(range(nsamp)), 0, nsamp, 1, method='linear'), dtype=float)
+fp = open("generated_data.dat", "wb")
+fp.write(struct.pack('f' * nsamp, *data))
 fp.close()
-
-
-#plt.plot(data)
-#plt.show()

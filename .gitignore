@@ -26,3 +26,9 @@
 *.exe
 *.out
 *.app
+
+# Data files
+*.dat
+
+# Temp files
+*~

@@ -5,7 +5,7 @@ import struct
 import itertools
 from math import *
 
-nchans = 1024
+nchans = 16384
 
 def plot_input():
     # Load file
