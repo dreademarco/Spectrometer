@@ -8,7 +8,7 @@
 using namespace std;
 
 unsigned ntaps  = 8;
-unsigned nfft   = 1024;
+unsigned nfft   = 16384;
 unsigned nsamp  = 65536 * 64;
 fftwf_plan plan;
 
@@ -36,17 +36,14 @@ void apply_ppf(fftwf_complex* fftw_input, fftwf_complex* fftw_output, float **wi
         for(unsigned i = 0; i < nfft; i++)
                 fftw_input[i][0] = fftw_input[i][1] = 0;
 
-
-
-
         // Loop of nfft samples
         for(unsigned s = 0; s < nfft; s++)
         {
             // Loop over ntaps
             for(unsigned t = 0; t < ntaps; t++)
             {
-                fftw_input[s][0] += fifo[s][t].x * window[s][t];
-                fftw_input[s][1] += fifo[s][t].y * window[s][t];
+                fftw_input[s][0] += fifo[s][t].x * window[s][ntaps - t - 1];
+                fftw_input[s][1] += fifo[s][t].y * window[s][ntaps - t - 1];
             }
         }
 
@@ -76,8 +73,17 @@ void generate_data(complex *buffer)
 void load_generated_data(char *filename, complex* buffer)
 {
     FILE *fp = fopen(filename, "rb");
-    fread(buffer, sizeof(complex), nsamp, fp);
+    float *temp = (float *) malloc(nsamp * sizeof(float));
+    fread(temp, sizeof(float), nsamp, fp);
     fclose(fp);
+
+    for(unsigned i = 0; i < nsamp; i++)
+    {
+        buffer[i].x = temp[i];
+        buffer[i].y = 0;
+    }
+
+    free(temp);
 }
 
 // Write a buffer to disk
@@ -137,10 +143,13 @@ int main()
     //generate_data(input);
     //dump_to_disk("input_data.dat", input, sizeof(complex), nsamp);
 
-    // ------  Load Chirp ------
-    char filename2[256];
-    sprintf(filename2, "generated_data.data");
-    load_generated_data(filename2,input);
+    // Load generated test data
+    load_generated_data("/home/lessju/Code/Spectrometer/prototypes/ppf/utils/generated_data.dat", input);
+
+    // ------ Set weights to 1
+//    for(unsigned i = 0; i < nfft; i++)
+//        for(unsigned j = 0; j < ntaps; j++)
+//            window[i][j] = 1;
 
 
     // ------ Load weights ------
