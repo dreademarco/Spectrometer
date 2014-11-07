@@ -45,14 +45,13 @@ void apply_ppf(fftwf_complex* fftw_input, fftwf_complex* fftw_output, float **wi
             // Loop over ntaps
             for(unsigned t = 0; t < ntaps; t++)
             {
-                //cout << fifo[s][t].x << "\t" << window[s][t] << endl;
                 fftw_input[s][0] += fifo[s][t].x * window[s][t];
                 fftw_input[s][1] += fifo[s][t].y * window[s][t];
             }
         }
 
         // TEMP - Override everything
-        memcpy(fftw_input, input + b, sizeof(complex) * nfft);
+        // memcpy(fftw_input, input + b, sizeof(complex) * nfft);
 
         // Apply fft
         fftwf_execute_dft(plan, fftw_input, fftw_output);
@@ -65,13 +64,20 @@ void apply_ppf(fftwf_complex* fftw_input, fftwf_complex* fftw_output, float **wi
 // Generate fake data for testing
 void generate_data(complex *buffer)
 {
-    // Buffer length is nsamp
+    // Simple sinusoids
     for(unsigned i = 0; i < nsamp; i++)
     {
         buffer[i].x = sin(2 * M_PI * i / 40.0) + sin(2 * M_PI * i / 128.0);
-        //cout << sin(2 * M_PI * i/40.0) << "\t" << sin(2 * M_PI * i/128.0) << endl;
         buffer[i].y = 0;
     }
+}
+
+// Load data from file
+void load_generated_data(char *filename, complex* buffer)
+{
+    FILE *fp = fopen(filename, "rb");
+    fread(buffer, sizeof(complex), nsamp, fp);
+    fclose(fp);
 }
 
 // Write a buffer to disk
@@ -128,8 +134,14 @@ int main()
     memset(output, 0, nsamp * sizeof(complex));
 
     // ------ Generate Fake Data ------
-    generate_data(input);
+    //generate_data(input);
     //dump_to_disk("input_data.dat", input, sizeof(complex), nsamp);
+
+    // ------  Load Chirp ------
+    char filename2[256];
+    sprintf(filename2, "generated_data.data");
+    load_generated_data(filename2,input);
+
 
     // ------ Load weights ------
     char filename[256];
@@ -137,9 +149,6 @@ int main()
     FILE *fp = fopen(filename, "rb");
     float *temp = (float *) malloc(ntaps * nfft * sizeof(float));
     fread(temp, sizeof(float), nfft * ntaps, fp);
-//    for(unsigned i=0; i<ntaps; ++i)
-//        for(unsigned j=0; j<nfft; ++j)
-//            window[j][i] = temp[i*nfft + j];
     for(unsigned i = 0; i < nfft; i++)
         for(unsigned j = 0; j < ntaps; j++)
             window[i][j] = temp[j * nfft + i];
