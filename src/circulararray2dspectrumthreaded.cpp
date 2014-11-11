@@ -80,3 +80,5 @@ void CircularArray2DSpectrumThreaded<T>::increaseFreeSpaces(){
 template class CircularArray2DSpectrumThreaded<int>;
 template class CircularArray2DSpectrumThreaded<float>;
 template class CircularArray2DSpectrumThreaded<double>;
+template class CircularArray2DSpectrumThreaded<complex<float> >;
+template class CircularArray2DSpectrumThreaded<complex<double> >;

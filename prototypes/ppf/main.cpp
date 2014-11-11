@@ -45,6 +45,7 @@ void apply_ppf(fftwf_complex* fftw_input, fftwf_complex* fftw_output, float **wi
                 fftw_input[s][0] += fifo[s][t].x * window[s][ntaps - t - 1];
                 fftw_input[s][1] += fifo[s][t].y * window[s][ntaps - t - 1];
             }
+            cout << fftw_input[s][0] << "\t" << fftw_input[s][1] << endl;
         }
 
         // TEMP - Override everything
@@ -144,7 +145,7 @@ int main()
     //dump_to_disk("input_data.dat", input, sizeof(complex), nsamp);
 
     // Load generated test data
-    load_generated_data("/home/lessju/Code/Spectrometer/prototypes/ppf/utils/generated_data.dat", input);
+    load_generated_data("generated_data.dat", input);
 
     // ------ Set weights to 1
 //    for(unsigned i = 0; i < nfft; i++)

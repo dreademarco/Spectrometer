@@ -1,6 +1,6 @@
 fs = 1024;  % Sample rate (MHz)
 dec = 32; % Decimation factor
-taps = 2^8; % Number of taps
+taps = 256; % Number of taps 2^8
 
 % Time array
 t = 0:(1/fs):((1/fs)*(taps-1));
@@ -16,6 +16,7 @@ S = fftshift(fft((s)));
 
 % Frequency array of spectrum
 f = ((-floor(100 * taps / 2): (ceil(100*taps/2)-1))/(100*taps))/(t(2)-t(1));
+%f = ((-floor(taps / 2): (ceil(taps/2)-1))/(taps))/(t(2)-t(1));
 
 % Plot the spectrum
 figure(1); plot(f, 20*log10(abs(S)));

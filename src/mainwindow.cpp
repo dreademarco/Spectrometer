@@ -26,6 +26,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->consumerProgressBar->setRange(0, overallSamples);
     ui->bufferProgressBar->setRange(0, samplesSize);
 
+    PPF *myPPF;
+    myPPF = new PPF(8,256);
+
     //initialize raw dataBlock, and populate it
     rawSourceDataBlock = new CircularArray2DSpectrumThreaded<float>(freqBins,samplesSize);
     int placements = 0;

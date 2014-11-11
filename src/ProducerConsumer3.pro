@@ -27,7 +27,10 @@ SOURCES += main.cpp\
     circulararray2dspectrum.cpp \
     circulararray2dspectrumthreaded.cpp \
     pipeline.cpp \
-    plotter.cpp
+    plotter.cpp \
+    framedata.cpp \
+    framedatacomplex.cpp \
+    ppf.cpp
 
 HEADERS  += mainwindow.h \
     array2dworker.h \
@@ -46,7 +49,10 @@ HEADERS  += mainwindow.h \
     circulararray2dspectrum.h \
     circulararray2dspectrumthreaded.h \
     pipeline.h \
-    plotter.h
+    plotter.h \
+    framedata.h \
+    framedatacomplex.h \
+    ppf.h
 
 FORMS    += mainwindow.ui
 
@@ -55,3 +61,5 @@ QMAKE_LFLAGS +=  -fopenmp
 
 INCLUDEPATH += /usr/local/qwt-6.1.1/include #Added this
 LIBS += -L/usr/local/qwt-6.1.1/lib -lqwt #Added this
+
+LIBS += -lm -lfftw3 -lfftw3f

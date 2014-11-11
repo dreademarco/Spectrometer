@@ -4,10 +4,11 @@
 #include <iostream>
 #include <stdio.h>
 #include <string.h>
+#include <complex>
 #include <omp.h>
 
 /*
- * Represtents a 2D Array in relation to a Spectrum. Logically, the array is stored as a single vector for speed.
+ * Represtents a 2D Array in relation to a Spectrum. Logically, the array is stored as a 1D vector for speed.
  * The order of data input is interpreted as follows:
  *
  * [ | Ch.1 | Ch.2 | Ch.3 | Ch.4 | Ch.5 | .. | Ch.N || Ch.1 | Ch.2 | Ch.3 | Ch.4 | Ch.5 | .. | Ch.N || ]

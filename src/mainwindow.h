@@ -12,6 +12,7 @@
 #include "circulararray2dspectrumthreaded.h"
 #include "pipeline.h"
 #include "plotter.h"
+#include "ppf.h"
 #include <QMainWindow>
 
 namespace Ui {

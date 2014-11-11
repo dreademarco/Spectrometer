@@ -2,7 +2,7 @@
 using namespace std;
 
 /*
- * Represtents a 2D Array in relation to a Spectrum. Logically, the array is stored as a single vector for speed.
+ * Represtents a 2D Array in relation to a Spectrum. Logically, the array is stored as a 1D vector for speed.
  * The order of data input is interpreted as follows:
  *
  * [ | Ch.1 | Ch.2 | Ch.3 | Ch.4 | Ch.5 | .. | Ch.N || Ch.1 | Ch.2 | Ch.3 | Ch.4 | Ch.5 | .. | Ch.N || ]
@@ -28,6 +28,7 @@ Array2DSpectrum<T>::Array2DSpectrum(int channels, int samples)
     this->channels = channels;
     this->samples = samples;
     data = new T[channels*samples];
+    memset(data, 0, (channels*samples) * sizeof(T));
     temp_channeldata = new T[channels];
     temp_sampledata = new T[samples];
 }
@@ -264,3 +265,5 @@ void Array2DSpectrum<T>::toString(){
 template class Array2DSpectrum<int>;
 template class Array2DSpectrum<float>;
 template class Array2DSpectrum<double>;
+template class Array2DSpectrum<complex<float> >;
+template class Array2DSpectrum<complex<double> >;

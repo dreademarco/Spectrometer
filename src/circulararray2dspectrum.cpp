@@ -166,3 +166,5 @@ void CircularArray2DSpectrum<T>::pushSpectrumFast(int length, Array2DSpectrum<T>
 template class CircularArray2DSpectrum<int>;
 template class CircularArray2DSpectrum<float>;
 template class CircularArray2DSpectrum<double>;
+template class CircularArray2DSpectrum<complex<float> >;
+template class CircularArray2DSpectrum<complex<double> >;

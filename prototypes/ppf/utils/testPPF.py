@@ -27,7 +27,8 @@ def plot_output():
     fp = open(filename, 'rb')
     data = fp.read()
     data = struct.unpack('f' * (len(data) / 4), data)
-    data = zip(*(iter(data),) * 2)    
+    data = zip(*(iter(data),) * 2)
+    print data    
     data = np.array([sqrt(i[0] * i[0] + i[1] * i[1]) for i in data])
     data = np.reshape(data, (len(data) / nchans, nchans))
     plt.imshow(data.T, interpolation='nearest', aspect='auto')
