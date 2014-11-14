@@ -6,37 +6,48 @@
 #include <fftw3.h>
 #include <math.h>
 #include <iostream>
-#include <cstdlib>
+#include <sys/time.h>
 using namespace std;
 
 class PPF
 {
 public:
-    PPF(int filter_taps = 8, int fft_points = 256);
+    PPF(int filter_taps = 8, int fft_points = 256, int fft_block_size = 10);
+    ~PPF();
     void printCoefficients();
+//    typedef float cfloat[2];
+////    typedef struct
+////    {
+////        float re, im;
+////    } cfloat;
 
 private:
+    int complex_size;
+
     int n_taps;
     int n_fft;
+    int nfft_blocks;
     fftwf_plan plan;
     int n_coefficients;
-    Array2DSpectrum<float> *filterCoeffs;
-    Array2DSpectrum<complex<float> > *tappedFilter;
-    Array2DSpectrum<complex<float> > *ppfOutput;
-    Array2DSpectrum<complex<float> > *fftwOutput;    
-    Array2DSpectrum<float> *chirpsignal;
-    Array2DSpectrum<complex<float> > *chirpsignalComplex;
-    Array2DSpectrum<complex<float> > *ppfSignalOutput;
-    Array2DSpectrum<float> *realPpfSignalOutput;
+    float* filterCoeffs;
+    fftwf_complex* tappedFilter;
+    fftwf_complex* ppfOutput;
+    fftwf_complex* fftwOutput;
+
+
+    fftwf_complex* chirpsignal;
+
+    fftwf_complex* ppfSignalOutput;
+    float* realPpfSignalOutput;
     fftwf_complex* in;
     fftwf_complex* out;
 
-    void applyPPF(Array2DSpectrum<complex<float> > *input);
-    //void generateLinearChirp(int fs, int duration, float f0, float f1, Array2DSpectrum<float>* signal, Array2DSpectrum<complex<float> >* complexsignal);
-    void generateLinearChirp(int fs, int duration, float f0, float t1, float f1, Array2DSpectrum<float>* signal, Array2DSpectrum<complex<float> >* complexsignal);
+    void applyPPF(fftwf_complex* input);
+    void generateLinearChirp(int fs, int duration, float f0, float t1, float f1, fftwf_complex* signal);
     void createFFTPlan();
-    void pushTapValues(Array2DSpectrum<complex<float> > *newTapInput);
+    void pushTapValues(fftwf_complex* newTapInput);
     void calculateTapOutput();
+    void calculateTapOutput_threaded(int nThreads);
     void ppfcoefficients();
     float hanning(int order);
     float sinc(float x);

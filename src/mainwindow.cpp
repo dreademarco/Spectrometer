@@ -26,9 +26,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->consumerProgressBar->setRange(0, overallSamples);
     ui->bufferProgressBar->setRange(0, samplesSize);
 
-    PPF *myPPF;
-    myPPF = new PPF(8,256);
-
     //initialize raw dataBlock, and populate it
     rawSourceDataBlock = new CircularArray2DSpectrumThreaded<float>(freqBins,samplesSize);
     int placements = 0;
@@ -48,7 +45,7 @@ MainWindow::MainWindow(QWidget *parent) :
     pipeline_thread = new QThread; // First thread
     plotter_thread = new QThread; // Second thread
 
-    // make pipeline thread    
+    // make pipeline thread
     //pipeline_thread = new Pipeline(this, rawSourceDataBlock, pipelineSourceDataBlock, block, integrationfactor);
     pipeline = new Pipeline(rawSourceDataBlock, pipelineSourceDataBlock, block, integrationfactor);
     connect(pipeline_thread, SIGNAL(started()), pipeline, SLOT(start()));
