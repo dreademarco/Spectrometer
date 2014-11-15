@@ -62,4 +62,4 @@ QMAKE_LFLAGS +=  -fopenmp
 INCLUDEPATH += /usr/local/qwt-6.1.1/include #Added this
 LIBS += -L/usr/local/qwt-6.1.1/lib -lqwt #Added this
 
-LIBS += -lm -lfftw3 -lfftw3f
+LIBS += -lm -lfftw3 -lfftw3f -lfftw3f_omp
