@@ -6,7 +6,7 @@
 
 QT       -= gui core
 
-TARGET = PPF
+TARGET    = PPF
 CONFIG   += console
 CONFIG   -= app_bundle
 
@@ -14,4 +14,4 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp
-LIBS    += -lfftw3f
+LIBS    += -lfftw3f -fopenmp

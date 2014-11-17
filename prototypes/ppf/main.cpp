@@ -5,11 +5,12 @@
 #include <math.h>
 #include <fftw3.h>
 #include <iostream>
+#include <omp.h>
 using namespace std;
 
 unsigned ntaps  = 8;
 unsigned nfft   = 16384;
-unsigned nsamp  = 65536 * 64;
+unsigned nsamp  = 65536 * 64 * 32;
 fftwf_plan plan;
 
 typedef struct
@@ -18,44 +19,61 @@ typedef struct
 } complex;
 
 // Apply polyphase filterbank
-void apply_ppf(fftwf_complex* fftw_input, fftwf_complex* fftw_output, float **window, complex *input, complex *output, complex **fifo)
+void apply_ppf(fftwf_complex* fftw_input, fftwf_complex* fftw_output, float *window, complex *input, complex *output, complex *fifo)
 {
+    // Create array pointers
+    complex *fifo_ptrs[ntaps];
+
+    // Copy fifo to input "space"
+    memcpy(input, fifo, ntaps * nfft * sizeof(float));
+
+    // Initialise pointers
+    for(unsigned t = 0; t < ntaps; t++)
+        fifo_ptrs[t] = input + t * nfft;
+
+    // Set number of openmp threads
+    int num_threads = 8;
+    omp_set_num_threads(num_threads);
+
     // Loop over input blocks of size nfft
-    for(unsigned b = 0; b < nsamp; b += nfft)
+    #pragma omp parallel
     {
-        // Adjust FIFOs
-        for(unsigned s = 0; s < nfft; s++)
-            for(unsigned i = ntaps - 1; i > 0; i--)
-                fifo[s][i] = fifo[s][i - 1];
+        // Get thread id
+        int threadId = omp_get_thread_num();
 
-        // Update FIFOs
-        for(unsigned s = 0; s < nfft; s++)
-                fifo[s][0] = input[b + s];
-
-        // Reset fftw buffers
-        for(unsigned i = 0; i < nfft; i++)
+        for(unsigned b = ntaps * nfft + threadId * nfft;
+                     b < nsamp + ntaps * nfft;
+                     b += nfft * num_threads)
+        {
+            // Reset fftw buffers
+            for(unsigned i = 0; i < nfft; i++)
                 fftw_input[i][0] = fftw_input[i][1] = 0;
 
-        // Loop of nfft samples
-        for(unsigned s = 0; s < nfft; s++)
-        {
             // Loop over ntaps
             for(unsigned t = 0; t < ntaps; t++)
             {
-                fftw_input[s][0] += fifo[s][t].x * window[s][ntaps - t - 1];
-                fftw_input[s][1] += fifo[s][t].y * window[s][ntaps - t - 1];
+                // Loop over samples
+                for(unsigned s = 0; s < nfft; s++)
+                {
+                    // Pre-load value to improve ILP
+                    float coeff = window[t * nfft + s];
+                    complex value = *(fifo_ptrs[t]);
+
+                    // Apply taps
+                    fftw_input[s][0] += value.x * coeff;
+                    fftw_input[s][1] += value.y * coeff;
+
+                    // Update fifo pointer
+                    fifo_ptrs[t]++;
+                }
             }
-            cout << fftw_input[s][0] << "\t" << fftw_input[s][1] << endl;
+
+            // Apply fft
+            fftwf_execute_dft(plan, fftw_input, fftw_output);
+
+            // Copy fft'ed result to output buffer
+            memcpy(output + b - (ntaps * nfft), fftw_output, sizeof(complex) * nfft);
         }
-
-        // TEMP - Override everything
-        // memcpy(fftw_input, input + b, sizeof(complex) * nfft);
-
-        // Apply fft
-        fftwf_execute_dft(plan, fftw_input, fftw_output);
-
-        // Copy fft'ed result to output buffer
-        memcpy(output + b, fftw_output, sizeof(complex) * nfft);
     }
 }
 
@@ -99,17 +117,10 @@ void dump_to_disk(char * filename, void *buffer, int datatype_size, int nelement
 int main()
 {
     // Allocate window cofficients
-    float **window = (float **) malloc(nfft * sizeof(float *));
-    for(unsigned i = 0; i < nfft; i++)
-        window[i] = (float *) malloc(ntaps * sizeof(float));
+    float *window = (float *) malloc(nfft * ntaps * sizeof(float));
 
     // Allocate fifo buffer
-    complex **fifo = (complex **) malloc(nfft * sizeof(complex *));
-    for(unsigned i = 0; i < nfft; i++)
-    {
-        fifo[i] = (complex *) malloc(ntaps * sizeof(complex));
-        memset(fifo[i], 0, ntaps * sizeof(complex));
-    }
+    complex *fifo = (complex *) malloc(nfft * ntaps * sizeof(complex));
 
     // Allocate temporary buffers
     fftwf_complex* fftw_input = (fftwf_complex *) malloc(nfft * sizeof(fftwf_complex));
@@ -118,9 +129,8 @@ int main()
     memset(fftw_output, 0, nfft * sizeof(fftwf_complex));
 
     // Fill up coefficients
-    for(unsigned i = 0; i < nfft; i++)
-        for (unsigned j = 0; j < ntaps; j++)
-            window[i][j] = window[i][j] = 1;
+    for(unsigned i = 0; i < nfft * ntaps; i++)
+            window[i] = 1.0;
 
     // Create FFTW plan
     fftwf_complex* in  = (fftwf_complex*) fftwf_malloc(ntaps * nfft * sizeof(fftwf_complex));
@@ -130,13 +140,13 @@ int main()
     fftwf_free(out);
 
     // Create input and output buffers
-    complex *input = (complex *) malloc(nsamp * sizeof(complex));
+    complex *input = (complex *) malloc((nfft * ntaps + nsamp) * sizeof(complex));
 
     // [S0 [C0 C1 C2 ... CN] ... SN [C0 C1 C2 ... CN]]
     complex *output = (complex *) malloc(nsamp * sizeof(complex));
 
     // Initialise input and output buffers
-    for(unsigned i = 0; i < nsamp; i++)
+    for(unsigned i = 0; i < nfft * ntaps + nsamp; i++)
         input[i].x = input[i].y = 1;
     memset(output, 0, nsamp * sizeof(complex));
 
@@ -145,24 +155,19 @@ int main()
     //dump_to_disk("input_data.dat", input, sizeof(complex), nsamp);
 
     // Load generated test data
-    load_generated_data("generated_data.dat", input);
+    //load_generated_data("generated_data.dat", input);
 
-    // ------ Set weights to 1
+
+    // ------ Load weights [Needs to be changed] ------
+//    char filename[256];
+//    sprintf(filename, "coeff_%d_%d.dat", ntaps, nfft);
+//    FILE *fp = fopen(filename, "rb");
+//    float *temp = (float *) malloc(ntaps * nfft * sizeof(float));
+//    fread(temp, sizeof(float), nfft * ntaps, fp);
 //    for(unsigned i = 0; i < nfft; i++)
 //        for(unsigned j = 0; j < ntaps; j++)
-//            window[i][j] = 1;
-
-
-    // ------ Load weights ------
-    char filename[256];
-    sprintf(filename, "coeff_%d_%d.dat", ntaps, nfft);
-    FILE *fp = fopen(filename, "rb");
-    float *temp = (float *) malloc(ntaps * nfft * sizeof(float));
-    fread(temp, sizeof(float), nfft * ntaps, fp);
-    for(unsigned i = 0; i < nfft; i++)
-        for(unsigned j = 0; j < ntaps; j++)
-            window[i][j] = temp[j * nfft + i];
-    free(temp);
+//            window[i][j] = temp[j * nfft + i];
+//    free(temp);
 
     // ------ Apply PPF -----
 
@@ -170,15 +175,17 @@ int main()
     long mtime, seconds, useconds;
     gettimeofday(&start, NULL);
 
-    apply_ppf(fftw_input, fftw_output, window, input, output, fifo);
+    int nreps = 10;
+    for(unsigned i = 0; i < nreps; i++)
+        apply_ppf(fftw_input, fftw_output, window, input, output, fifo);
 
     gettimeofday(&end, NULL);
     seconds  = end.tv_sec  - start.tv_sec;
     useconds = end.tv_usec - start.tv_usec;
 
     mtime = ((seconds) * 1000 + useconds/1000.0) + 0.5;
-    printf("Time: %ldms\n", mtime);
+    printf("Time: %ldms\n", mtime / nreps);
 
     // Output result to disk
-    dump_to_disk("output_data.dat", output, sizeof(complex), nsamp);
+    // dump_to_disk("output_data.dat", output, sizeof(complex), nsamp);
 }
