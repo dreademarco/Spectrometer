@@ -2,25 +2,48 @@
 
 PPF::PPF(int filter_taps, int fft_points, int blocks, int sampling_rate, int duration_seconds)
 {
-    int fftw_init_threads(void);
+    fftwf_init_threads();
     fs = sampling_rate;
     duration = duration_seconds;
     complex_size = sizeof(float)*2;
     fftblocks = blocks;
-
     n_taps = filter_taps;
     n_fft = fft_points;
+
+//    // Setup indexes for tap calculations
+//    int indexes_cnt = 0;
+//    int coeffOffset = 0;
+//    int tappedFilterOffset = 0;
+//    indexes_filterCoeffs = new int[n_fft*n_taps];
+//    indexes_tappedFilter = new int[n_fft*n_taps];
+
+//    for (int i=0; i<n_taps; ++i)
+//    {
+//        coeffOffset = i*n_fft;
+//        tappedFilterOffset = n_fft*(n_taps-i-1);
+//        for (int j = 0; j < n_fft; ++j) {
+//            //indexes_in[indexes_cnt] = block_offset+j;
+//            indexes_filterCoeffs[indexes_cnt] = coeffOffset+j;
+//            indexes_tappedFilter[indexes_cnt] = tappedFilterOffset+j;
+//            ++indexes_cnt;
+//        }
+//    }
+
     // PPF coefficients
     n_coefficients = n_taps*n_fft;
-    filterCoeffs = new float[n_coefficients];
+    filterCoeffs = (float*) malloc(n_coefficients * sizeof(float));
+    //filterCoeffs = new float[n_coefficients];
     memset(filterCoeffs, 0, n_coefficients * sizeof(float));
 
     // FIFO taps
-    tappedFilter = new fftwf_complex[n_fft*n_taps];
-    memset(tappedFilter, 0, n_fft*n_taps * complex_size);
+    //tappedFilter = new fftwf_complex[n_fft*n_taps];
+    tappedFilter = (fftwf_complex*) fftwf_malloc(n_fft*n_taps * sizeof(fftwf_complex));
+    memset(tappedFilter, 0, n_fft*n_taps * sizeof(fftwf_complex));
 
     // chirp data
-    chirpsignal = new fftwf_complex[fs*duration];
+    //chirpsignal = new fftwf_complex[fs*duration];
+    chirpsignal = (fftwf_complex*) fftwf_malloc(fs*duration * sizeof(fftwf_complex));
+    memset(chirpsignal, 0, fs*duration * sizeof(fftwf_complex));
 
     // PPF Output (and FFTW input)
     in  = (fftwf_complex*) fftwf_malloc(fftblocks * n_fft * sizeof(fftwf_complex));
@@ -52,11 +75,13 @@ PPF::PPF(int filter_taps, int fft_points, int blocks, int sampling_rate, int dur
 }
 
 PPF::~PPF(){
-    delete[] filterCoeffs;
-    delete[] tappedFilter;
-    fftw_free(in);
-    fftw_free(out);
-    //fftw_cleanup_threads();
+    //delete[] filterCoeffs;
+    //delete[] tappedFilter;
+    free(filterCoeffs);
+    free(tappedFilter);
+    fftwf_free(in);
+    fftwf_free(out);
+    fftwf_cleanup_threads();
 //    delete[] in;
 //    delete[] out;
 }
@@ -143,6 +168,16 @@ void PPF::ppfcoefficients()
         filterCoeffs[i] = sinc(filterCoeffs[i]) * hanning(i);
     }
 }
+
+//void PPF::calculateTapOutput(int block_counter)
+//{
+//    int block_offset = block_counter*n_fft;
+//    int totalIndexes = n_fft*n_taps;
+//    for (int i = 0; i < totalIndexes; ++i) {
+//        in[block_offset+i][0] += filterCoeffs[indexes_filterCoeffs[i]] * tappedFilter[indexes_tappedFilter[i]][0];
+//        in[block_offset+i][1] += filterCoeffs[indexes_filterCoeffs[i]] * tappedFilter[indexes_tappedFilter[i]][1];
+//    }
+//}
 
 void PPF::calculateTapOutput(int block_counter)
 {

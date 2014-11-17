@@ -6,6 +6,8 @@
 #include <fftw3.h>
 #include <math.h>
 #include <iostream>
+#include <omp.h>
+#include <cstdlib>
 #include <sys/time.h>
 using namespace std;
 
@@ -31,6 +33,9 @@ private:
     fftwf_complex* in;
     fftwf_complex* out;
     int fftblocks;
+
+//    int* indexes_filterCoeffs;
+//    int* indexes_tappedFilter;
 
     void applyPPF(fftwf_complex* input);
     void generateLinearChirp(int fs, int duration, float f0, float t1, float f1, fftwf_complex* signal);
