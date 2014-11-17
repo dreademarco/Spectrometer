@@ -59,7 +59,14 @@ FORMS    += mainwindow.ui
 QMAKE_CXXFLAGS+= -fopenmp
 QMAKE_LFLAGS +=  -fopenmp
 
-
+# remove possible other optimization flags
+QMAKE_CXXFLAGS_RELEASE -= -O
+QMAKE_CXXFLAGS_RELEASE -= -O1
+QMAKE_CXXFLAGS_RELEASE -= -O3
+# add the desired -O3 if not present
+QMAKE_CXXFLAGS_RELEASE *= -O2
+QMAKE_FLAGS_RELEASE += -msse4.1 -mssse3 -msse3 -msse2 -msse
+QMAKE_CXXFLAGS_RELEASE += -msse4.1 -mssse3 -msse3 -msse2 -msse
 
 INCLUDEPATH += /usr/local/qwt-6.1.1/include #Added this
 LIBS += -L/usr/local/qwt-6.1.1/lib -lqwt #Added this

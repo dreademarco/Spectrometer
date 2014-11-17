@@ -10,6 +10,9 @@ PPF::PPF(int filter_taps, int fft_points, int blocks, int sampling_rate, int dur
     n_taps = filter_taps;
     n_fft = fft_points;
 
+    numThreads = 2;
+    omp_set_num_threads(numThreads);
+
 //    // Setup indexes for tap calculations
 //    int indexes_cnt = 0;
 //    int coeffOffset = 0;
@@ -31,7 +34,7 @@ PPF::PPF(int filter_taps, int fft_points, int blocks, int sampling_rate, int dur
 
     // PPF coefficients
     n_coefficients = n_taps*n_fft;
-    filterCoeffs = (float*) malloc(n_coefficients * sizeof(float));
+    filterCoeffs = (float*) fftwf_malloc(n_coefficients * sizeof(float));
     //filterCoeffs = new float[n_coefficients];
     memset(filterCoeffs, 0, n_coefficients * sizeof(float));
 
@@ -77,8 +80,8 @@ PPF::PPF(int filter_taps, int fft_points, int blocks, int sampling_rate, int dur
 PPF::~PPF(){
     //delete[] filterCoeffs;
     //delete[] tappedFilter;
-    free(filterCoeffs);
-    free(tappedFilter);
+    fftwf_free(filterCoeffs);
+    fftwf_free(tappedFilter);
     fftwf_free(in);
     fftwf_free(out);
     fftwf_cleanup_threads();
@@ -145,7 +148,6 @@ void PPF::generateLinearChirp(int fs, int duration, float f0, float t1, float f1
 void PPF::createFFTPlan()
 {
     //plan = fftwf_plan_dft_1d(n_fft, in, out, FFTW_FORWARD, FFTW_MEASURE);
-    omp_set_num_threads(2);
     fftwf_plan_with_nthreads(omp_get_max_threads());
     int n[] = {n_fft};
     plan = fftwf_plan_many_dft(1, n, fftblocks,
@@ -171,11 +173,23 @@ void PPF::ppfcoefficients()
 
 //void PPF::calculateTapOutput(int block_counter)
 //{
+//    //initialize offsets
 //    int block_offset = block_counter*n_fft;
-//    int totalIndexes = n_fft*n_taps;
-//    for (int i = 0; i < totalIndexes; ++i) {
-//        in[block_offset+i][0] += filterCoeffs[indexes_filterCoeffs[i]] * tappedFilter[indexes_tappedFilter[i]][0];
-//        in[block_offset+i][1] += filterCoeffs[indexes_filterCoeffs[i]] * tappedFilter[indexes_tappedFilter[i]][1];
+//    int coeffOffset = 0;
+//    int tappedFilterOffset = 0;
+
+//    for (int i=0; i<n_taps; ++i)
+//    {
+//        coeffOffset = i*n_fft;
+//        tappedFilterOffset = n_fft*(n_taps-i-1);
+//        #pragma omp parallel
+//        {
+//            int threadId = omp_get_thread_num();
+//            for (int j = threadId * n_fft / numThreads; j < (threadId + 1) * n_fft / numThreads; j++){
+//                in[block_offset+j][0] += filterCoeffs[coeffOffset+j] * tappedFilter[tappedFilterOffset+j][0];
+//                in[block_offset+j][1] += filterCoeffs[coeffOffset+j] * tappedFilter[tappedFilterOffset+j][1];
+//            }
+//        }
 //    }
 //}
 

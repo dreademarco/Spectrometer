@@ -7,6 +7,7 @@
 #include <math.h>
 #include <iostream>
 #include <omp.h>
+#include <emmintrin.h>
 #include <cstdlib>
 #include <sys/time.h>
 using namespace std;
@@ -33,6 +34,8 @@ private:
     fftwf_complex* in;
     fftwf_complex* out;
     int fftblocks;
+
+    int numThreads;
 
 //    int* indexes_filterCoeffs;
 //    int* indexes_tappedFilter;
