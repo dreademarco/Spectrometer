@@ -117,7 +117,6 @@ void PPF::applyPPF()
                 {
                     // Pre-load value to improve ILP
                     fftwf_complex value;
-                    int location;
                     float coeff = filterCoeffs[t * n_fft + s];
                     value[0] = (*(fifo_ptrs[t]))[0];
                     value[1] = (*(fifo_ptrs[t]))[1];
