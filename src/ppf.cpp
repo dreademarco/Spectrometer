@@ -37,9 +37,9 @@ PPF::PPF(int filter_taps, int fft_points, int blocks, int sampling_rate, int dur
     memset(chirpsignal, 0, fs*duration * sizeof(fftwf_complex));
 
     // FFTW Input
-    fftw_in  = (fftwf_complex*) fftwf_malloc(fftblocks * n_fft * sizeof(fftwf_complex));
+    fftw_in  = (fftwf_complex*) fftwf_malloc(n_fft * sizeof(fftwf_complex));
     // FFTW Output
-    fftw_out = (fftwf_complex*) fftwf_malloc(fftblocks * n_fft * sizeof(fftwf_complex));
+    fftw_out = (fftwf_complex*) fftwf_malloc(n_fft * sizeof(fftwf_complex));
 
 
     ppfcoefficients(); // generate weights
@@ -61,7 +61,7 @@ PPF::PPF(int filter_taps, int fft_points, int blocks, int sampling_rate, int dur
     elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;   // us to ms
     cout << "PPF elasped time: " << elapsedTime << " ms" << endl;
     if(elapsedTime>0){
-        float datarate = ((((fs*duration)/elapsedTime)/1000000))*1000.0;
+        float datarate = ((((n_samp)/elapsedTime)/1000000))*1000.0;
         cout << "PPF Data rate est.: " << datarate << " Mhz" << endl;
     }else{
         cout << "PPF Data rate est.: n/a"  << " Mhz" << endl;
@@ -75,7 +75,7 @@ PPF::~PPF(){
     fftwf_free(fftw_out);
     fftwf_free(inputBuffer);
     fftwf_free(outputBuffer);
-    fftwf_cleanup_threads();
+    //fftwf_cleanup_threads();
 }
 
 void PPF::loadInput(fftwf_complex* input){
@@ -86,28 +86,35 @@ void PPF::loadInput(fftwf_complex* input){
 
 void PPF::applyPPF()
 {
-    fftwf_complex *fifo_ptrs[n_taps]; // an array of pointers to locations that contain fftwf_complex data
+    int start_gap = (n_taps-1) * n_fft;
 
-    // Initialise pointers
-    for(int t = 0; t < n_taps; t++){
-        fifo_ptrs[t] = inputBuffer + (t*n_fft);
-    }
+//    fftwf_complex *fifo_ptrs[n_taps]; // an array of pointers to locations that contain fftwf_complex data
+//    // Initialise pointers
+//    for(int t = 0; t < n_taps; t++){
+//        fifo_ptrs[t] = inputBuffer + (t*n_fft);
+//    }
 
     // Copy fifo to input "space"
     //memcpy(inputBuffer, fifo, n_taps * n_fft * sizeof(fftwf_complex));
 
+    // Loop over input blocks of size nfft
     #pragma omp parallel
     {
+        fftwf_complex *fifo_ptrs[n_taps]; // an array of pointers to locations that contain fftwf_complex data
         // Get thread id
-        int threadId = omp_get_thread_num();
-        // Loop over input blocks of size nfft
-        //for (int b = (n_taps-1)*n_fft; b < n_samp + ((n_taps-1)*n_fft); b+=n_fft)
-        for(int b = ((n_taps-1) * n_fft) + (threadId * n_fft);
-                    b < n_samp + ((n_taps-1) * n_fft);
-                    b += n_fft * numThreads)
-        {
+        int threadID = omp_get_thread_num();
+
+        for(int b = start_gap + threadID * n_fft;
+                     b < n_samp + start_gap;
+                     b += n_fft * numThreads){
+        //for (int b = (n_taps-1)*n_fft; b < n_samp + start_gap; b+=n_fft){
             // Reset fftw_in buffers
             memset(fftw_in, 0, n_fft * sizeof(fftwf_complex));
+
+            // Align pointers for this block
+            for(int t = 0; t < n_taps; t++){
+                fifo_ptrs[t] = inputBuffer + (t*n_fft) + (b-start_gap);
+            }
 
             // Loop over ntaps
             for(int t = 0; t < n_taps; t++)
@@ -117,9 +124,12 @@ void PPF::applyPPF()
                 {
                     // Pre-load value to improve ILP
                     fftwf_complex value;
-                    float coeff = filterCoeffs[t * n_fft + s];
+                    float coeff;
+                    coeff = filterCoeffs[t * n_fft + s];
                     value[0] = (*(fifo_ptrs[t]))[0];
                     value[1] = (*(fifo_ptrs[t]))[1];
+
+                    //cout << "b: " << b << "\t" << value[0] << "\t" << value[1] << endl;
 
                     // Apply taps
                     fftw_in[s][0] += value[0] * coeff;
@@ -131,11 +141,10 @@ void PPF::applyPPF()
             }
 
             // Apply fft and copy directly to output buffer
-            fftwf_execute_dft(plan, fftw_in, outputBuffer + b - ((n_taps-1) * n_fft));
+            fftwf_execute_dft(plan, fftw_in, outputBuffer + b - start_gap);
             //fftwf_execute_dft(plan, fftw_in, fftw_out);
         }
     }
-
 //    for (int i = 0; i < n_samp; ++i){
 //        cout << sqrt((outputBuffer[i][0]*outputBuffer[i][0]) + (outputBuffer[i][1]*outputBuffer[i][1])) << endl;
 //    }
