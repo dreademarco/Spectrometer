@@ -1,68 +1,59 @@
 #include "ppf.h"
 
-PPF::PPF(int filter_taps, int fft_points, int blocks, int sampling_rate, int duration_seconds)
+PPF::PPF(int filter_taps, int fft_points, int blocks, int sampling_rate, int duration_seconds, int n_threads)
 {
-    fftwf_init_threads();
     fs = sampling_rate;
     duration = duration_seconds;
     complex_size = sizeof(float)*2;
     fftblocks = blocks;
     n_taps = filter_taps;
     n_fft = fft_points;
+    n_samp = sampling_rate*duration_seconds;
 
-    numThreads = 2;
+    // Set number of openmp threads
+    numThreads = n_threads;
     omp_set_num_threads(numThreads);
+    //fftwf_init_threads();
 
-//    // Setup indexes for tap calculations
-//    int indexes_cnt = 0;
-//    int coeffOffset = 0;
-//    int tappedFilterOffset = 0;
-//    indexes_filterCoeffs = new int[n_fft*n_taps];
-//    indexes_tappedFilter = new int[n_fft*n_taps];
+    // Input buffer (first tap is also the first n_fft chunk of the signal)
+    inputBuffer = (fftwf_complex*) fftwf_malloc(((n_taps-1) * n_fft + n_samp) * sizeof(fftwf_complex));
+    memset(inputBuffer, 0, ((n_taps-1) * n_fft + n_samp) * sizeof(fftwf_complex));
 
-//    for (int i=0; i<n_taps; ++i)
-//    {
-//        coeffOffset = i*n_fft;
-//        tappedFilterOffset = n_fft*(n_taps-i-1);
-//        for (int j = 0; j < n_fft; ++j) {
-//            //indexes_in[indexes_cnt] = block_offset+j;
-//            indexes_filterCoeffs[indexes_cnt] = coeffOffset+j;
-//            indexes_tappedFilter[indexes_cnt] = tappedFilterOffset+j;
-//            ++indexes_cnt;
-//        }
-//    }
+    // Output buffer
+    outputBuffer = (fftwf_complex*) fftwf_malloc(n_samp * sizeof(fftwf_complex));
+    memset(outputBuffer, 0, n_samp * sizeof(fftwf_complex));
 
     // PPF coefficients
     n_coefficients = n_taps*n_fft;
     filterCoeffs = (float*) fftwf_malloc(n_coefficients * sizeof(float));
-    //filterCoeffs = new float[n_coefficients];
     memset(filterCoeffs, 0, n_coefficients * sizeof(float));
 
     // FIFO taps
-    //tappedFilter = new fftwf_complex[n_fft*n_taps];
-    tappedFilter = (fftwf_complex*) fftwf_malloc(n_fft*n_taps * sizeof(fftwf_complex));
-    memset(tappedFilter, 0, n_fft*n_taps * sizeof(fftwf_complex));
+    fifo = (fftwf_complex*) fftwf_malloc(n_fft*n_taps * sizeof(fftwf_complex));
+    memset(fifo, 0, n_fft*n_taps * sizeof(fftwf_complex));
 
     // chirp data
-    //chirpsignal = new fftwf_complex[fs*duration];
     chirpsignal = (fftwf_complex*) fftwf_malloc(fs*duration * sizeof(fftwf_complex));
     memset(chirpsignal, 0, fs*duration * sizeof(fftwf_complex));
 
-    // PPF Output (and FFTW input)
-    in  = (fftwf_complex*) fftwf_malloc(fftblocks * n_fft * sizeof(fftwf_complex));
+    // FFTW Input
+    fftw_in  = (fftwf_complex*) fftwf_malloc(fftblocks * n_fft * sizeof(fftwf_complex));
     // FFTW Output
-    out = (fftwf_complex*) fftwf_malloc(fftblocks * n_fft * sizeof(fftwf_complex));
+    fftw_out = (fftwf_complex*) fftwf_malloc(fftblocks * n_fft * sizeof(fftwf_complex));
+
+
     ppfcoefficients(); // generate weights
     createFFTPlan(); // create FFTW plan
 
-    //generateLinearChirp(fs,duration,0,duration/2,100,chirpsignal);
+    generateLinearChirp(fs,duration,0,duration/2,100,chirpsignal);
     // MATLAB: spectrogram(chirp,256,128,256,1024,'yaxis')
+    loadInput(chirpsignal);
 
     timeval t1, t2;
     double elapsedTime;
     gettimeofday(&t1, NULL);
 
-    applyPPF(chirpsignal);
+    applyPPF();
 
     gettimeofday(&t2, NULL);
     // compute and print the elapsed time in millisec
@@ -78,57 +69,77 @@ PPF::PPF(int filter_taps, int fft_points, int blocks, int sampling_rate, int dur
 }
 
 PPF::~PPF(){
-    //delete[] filterCoeffs;
-    //delete[] tappedFilter;
     fftwf_free(filterCoeffs);
-    fftwf_free(tappedFilter);
-    fftwf_free(in);
-    fftwf_free(out);
+    fftwf_free(fifo);
+    fftwf_free(fftw_in);
+    fftwf_free(fftw_out);
+    fftwf_free(inputBuffer);
+    fftwf_free(outputBuffer);
     fftwf_cleanup_threads();
-//    delete[] in;
-//    delete[] out;
 }
 
-void PPF::applyPPF(fftwf_complex* input)
+void PPF::loadInput(fftwf_complex* input){
+    // Copy input block to inputBuffer at the end of FIFO location
+    //last tap will point to the first chunk of data of size n_fft
+    memcpy(inputBuffer[(n_taps-1)*n_fft], input, n_samp * sizeof(fftwf_complex));
+}
+
+void PPF::applyPPF()
 {
-    int nsamp = fs*duration;
-    int bytesToShift = (n_fft * (n_taps-1))*complex_size;
+    fftwf_complex *fifo_ptrs[n_taps]; // an array of pointers to locations that contain fftwf_complex data
 
-    int b=0; int block_counter = 0; int block_b = 0;
-    while(b<nsamp){
-        //reset tap output
-        memset(&in[block_counter*n_fft], 0, n_fft * complex_size);
-
-        //push block to taps
-        pushTapValues(input,b);
-
-        //process taps
-        calculateTapOutput(block_counter);
-
-        //Testing - Overwrite PPF output
-        //memcpy(&in[0],&tempBuffer[0],n_fft*complex_size);
-
-        b+=n_fft;  block_b += n_fft; ++block_counter;
-        if(block_counter==fftblocks){
-            //pass tap output to FFTW, in is the input to FFTW, result is put in the output stream out
-            fftwf_execute_dft(plan, in, &out[block_b-(fftblocks*n_fft)]);
-            block_counter=0;
-            block_b = 0;
-        }
-        shiftTapValues(bytesToShift);
+    // Initialise pointers
+    for(int t = 0; t < n_taps; t++){
+        fifo_ptrs[t] = inputBuffer + (t*n_fft);
     }
-//    for (int i = 0; i < nsamp; ++i){
-//        cout << sqrt((out[i][0]*out[i][0]) + (out[i][1]*out[i][1])) << endl;
+
+    // Copy fifo to input "space"
+    //memcpy(inputBuffer, fifo, n_taps * n_fft * sizeof(fftwf_complex));
+
+    #pragma omp parallel
+    {
+        // Get thread id
+        int threadId = omp_get_thread_num();
+        // Loop over input blocks of size nfft
+        //for (int b = (n_taps-1)*n_fft; b < n_samp + ((n_taps-1)*n_fft); b+=n_fft)
+        for(int b = ((n_taps-1) * n_fft) + (threadId * n_fft);
+                    b < n_samp + ((n_taps-1) * n_fft);
+                    b += n_fft * numThreads)
+        {
+            // Reset fftw_in buffers
+            memset(fftw_in, 0, n_fft * sizeof(fftwf_complex));
+
+            // Loop over ntaps
+            for(int t = 0; t < n_taps; t++)
+            {
+                // Loop over samples
+                for(int s = 0; s < n_fft; s++)
+                {
+                    // Pre-load value to improve ILP
+                    fftwf_complex value;
+                    int location;
+                    float coeff = filterCoeffs[t * n_fft + s];
+                    value[0] = (*(fifo_ptrs[t]))[0];
+                    value[1] = (*(fifo_ptrs[t]))[1];
+
+                    // Apply taps
+                    fftw_in[s][0] += value[0] * coeff;
+                    fftw_in[s][1] += value[1] * coeff;
+
+                    // Update fifo pointer
+                    fifo_ptrs[t]++;
+                }
+            }
+
+            // Apply fft and copy directly to output buffer
+            fftwf_execute_dft(plan, fftw_in, outputBuffer + b - ((n_taps-1) * n_fft));
+            //fftwf_execute_dft(plan, fftw_in, fftw_out);
+        }
+    }
+
+//    for (int i = 0; i < n_samp; ++i){
+//        cout << sqrt((outputBuffer[i][0]*outputBuffer[i][0]) + (outputBuffer[i][1]*outputBuffer[i][1])) << endl;
 //    }
-}
-
-void PPF::shiftTapValues(int bytesToShift){
-    memmove(&tappedFilter[n_fft],&tappedFilter[0],bytesToShift);
-}
-
-void PPF::pushTapValues(fftwf_complex* inputStream, int copyIndex)
-{
-    memcpy(&tappedFilter[0],&inputStream[copyIndex],n_fft*complex_size);
 }
 
 void PPF::generateLinearChirp(int fs, int duration, float f0, float t1, float f1, fftwf_complex* signal)
@@ -147,13 +158,13 @@ void PPF::generateLinearChirp(int fs, int duration, float f0, float t1, float f1
 
 void PPF::createFFTPlan()
 {
-    //plan = fftwf_plan_dft_1d(n_fft, in, out, FFTW_FORWARD, FFTW_MEASURE);
-    fftwf_plan_with_nthreads(omp_get_max_threads());
-    int n[] = {n_fft};
-    plan = fftwf_plan_many_dft(1, n, fftblocks,
-                               in, n, 1, n_fft,
-                               out, n, 1, n_fft,
-                               FFTW_FORWARD, FFTW_MEASURE);
+    plan = fftwf_plan_dft_1d(n_fft, fftw_in, fftw_out, FFTW_FORWARD, FFTW_MEASURE);
+//    fftwf_plan_with_nthreads(omp_get_max_threads());
+//    int n[] = {n_fft};
+//    plan = fftwf_plan_many_dft(1, n, fftblocks,
+//                               fftw_in, n, 1, n_fft,
+//                               fftw_out, n, 1, n_fft,
+//                               FFTW_FORWARD, FFTW_MEASURE);
 }
 
 void PPF::printCoefficients()
@@ -169,56 +180,9 @@ void PPF::ppfcoefficients()
         filterCoeffs[i] = ((float)i/n_fft - ((float)n_taps/2));
         filterCoeffs[i] = sinc(filterCoeffs[i]) * hanning(i);
     }
+    //reverse(filterCoeffs, filterCoeffs+n_coefficients);
 }
 
-//void PPF::calculateTapOutput(int block_counter)
-//{
-//    //initialize offsets
-//    int block_offset = block_counter*n_fft;
-//    int coeffOffset = 0;
-//    int tappedFilterOffset = 0;
-
-//    for (int i=0; i<n_taps; ++i)
-//    {
-//        coeffOffset = i*n_fft;
-//        tappedFilterOffset = n_fft*(n_taps-i-1);
-//        #pragma omp parallel
-//        {
-//            int threadId = omp_get_thread_num();
-//            for (int j = threadId * n_fft / numThreads; j < (threadId + 1) * n_fft / numThreads; j++){
-//                in[block_offset+j][0] += filterCoeffs[coeffOffset+j] * tappedFilter[tappedFilterOffset+j][0];
-//                in[block_offset+j][1] += filterCoeffs[coeffOffset+j] * tappedFilter[tappedFilterOffset+j][1];
-//            }
-//        }
-//    }
-//}
-
-void PPF::calculateTapOutput(int block_counter)
-{
-    //initialize offsets
-    int block_offset = block_counter*n_fft;
-    int coeffOffset = 0;
-    int tappedFilterOffset = 0;
-
-    for (int i=0; i<n_taps; ++i)
-    {
-        coeffOffset = i*n_fft;
-        tappedFilterOffset = n_fft*(n_taps-i-1);
-        for (int j = 0; j < n_fft; j+=4) {
-            in[block_offset+j][0] += filterCoeffs[coeffOffset+j] * tappedFilter[tappedFilterOffset+j][0];
-            in[block_offset+j][1] += filterCoeffs[coeffOffset+j] * tappedFilter[tappedFilterOffset+j][1];
-
-            in[block_offset+j+1][0] += filterCoeffs[coeffOffset+j+1] * tappedFilter[tappedFilterOffset+j+1][0];
-            in[block_offset+j+1][1] += filterCoeffs[coeffOffset+j+1] * tappedFilter[tappedFilterOffset+j+1][1];
-
-            in[block_offset+j+2][0] += filterCoeffs[coeffOffset+j+2] * tappedFilter[tappedFilterOffset+j+2][0];
-            in[block_offset+j+2][1] += filterCoeffs[coeffOffset+j+2] * tappedFilter[tappedFilterOffset+j+2][1];
-
-            in[block_offset+j+3][0] += filterCoeffs[coeffOffset+j+3] * tappedFilter[tappedFilterOffset+j+3][0];
-            in[block_offset+j+3][1] += filterCoeffs[coeffOffset+j+3] * tappedFilter[tappedFilterOffset+j+3][1];
-        }
-    }
-}
 
 float PPF::hanning(int order)
 {
