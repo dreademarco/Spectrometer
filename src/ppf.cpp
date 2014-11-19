@@ -1,6 +1,6 @@
 #include "ppf.h"
 
-PPF::PPF(int filter_taps, int fft_points, int blocks, int sampling_rate, int duration_seconds, int n_threads)
+PPF::PPF(int filter_taps, int fft_points, int blocks, int sampling_rate, int duration_seconds, int n_threads, bool generateWisdom)
 {
     fs = sampling_rate;
     duration = duration_seconds;
@@ -16,8 +16,8 @@ PPF::PPF(int filter_taps, int fft_points, int blocks, int sampling_rate, int dur
     //fftwf_init_threads();
 
     // Input buffer (first tap is also the first n_fft chunk of the signal)
-    inputBuffer = (fftwf_complex*) fftwf_malloc(((n_taps-1) * n_fft + n_samp) * sizeof(fftwf_complex));
-    memset(inputBuffer, 0, ((n_taps-1) * n_fft + n_samp) * sizeof(fftwf_complex));
+    inputBuffer = (fftwf_complex*) fftwf_malloc((((n_taps-1) * n_fft) + n_samp) * sizeof(fftwf_complex));
+    memset(inputBuffer, 0, (((n_taps-1) * n_fft) + n_samp) * sizeof(fftwf_complex));
 
     // Output buffer
     outputBuffer = (fftwf_complex*) fftwf_malloc(n_samp * sizeof(fftwf_complex));
@@ -28,26 +28,23 @@ PPF::PPF(int filter_taps, int fft_points, int blocks, int sampling_rate, int dur
     filterCoeffs = (float*) fftwf_malloc(n_coefficients * sizeof(float));
     memset(filterCoeffs, 0, n_coefficients * sizeof(float));
 
-    // FIFO taps
-    fifo = (fftwf_complex*) fftwf_malloc(n_fft*n_taps * sizeof(fftwf_complex));
-    memset(fifo, 0, n_fft*n_taps * sizeof(fftwf_complex));
+//    // FIFO taps
+//    fifo = (fftwf_complex*) fftwf_malloc(n_fft*n_taps * sizeof(fftwf_complex));
+//    memset(fifo, 0, n_fft*n_taps * sizeof(fftwf_complex));
 
     // chirp data
     chirpsignal = (fftwf_complex*) fftwf_malloc(fs*duration * sizeof(fftwf_complex));
     memset(chirpsignal, 0, fs*duration * sizeof(fftwf_complex));
 
-    // FFTW Input
-    fftw_in  = (fftwf_complex*) fftwf_malloc(n_fft * sizeof(fftwf_complex));
-    // FFTW Output
-    fftw_out = (fftwf_complex*) fftwf_malloc(n_fft * sizeof(fftwf_complex));
-
-
     ppfcoefficients(); // generate weights
-    createFFTPlan(); // create FFTW plan
+    if(generateWisdom){
+        createFFTPlanWisdom(); //generate fftw wisdom
+    }
 
     generateLinearChirp(fs,duration,0,duration/2,100,chirpsignal);
     // MATLAB: spectrogram(chirp,256,128,256,1024,'yaxis')
     loadInput(chirpsignal);
+    fftwf_free(chirpsignal);
 
     timeval t1, t2;
     double elapsedTime;
@@ -70,11 +67,9 @@ PPF::PPF(int filter_taps, int fft_points, int blocks, int sampling_rate, int dur
 
 PPF::~PPF(){
     fftwf_free(filterCoeffs);
-    fftwf_free(fifo);
-    fftwf_free(fftw_in);
-    fftwf_free(fftw_out);
     fftwf_free(inputBuffer);
     fftwf_free(outputBuffer);
+    //fftwf_free(chirpsignal);
     //fftwf_cleanup_threads();
 }
 
@@ -82,38 +77,48 @@ void PPF::loadInput(fftwf_complex* input){
     // Copy input block to inputBuffer at the end of FIFO location
     //last tap will point to the first chunk of data of size n_fft
     memcpy(inputBuffer[(n_taps-1)*n_fft], input, n_samp * sizeof(fftwf_complex));
+//    for (int i = 0; i < n_samp; ++i) {
+//        cout << inputBuffer[i+((n_taps-1)*n_fft)][0] << endl;
+//    }
 }
 
 void PPF::applyPPF()
 {
     int start_gap = (n_taps-1) * n_fft;
+    fftwf_complex *inputBufferPointer;
+    inputBufferPointer = inputBuffer;
 
-//    fftwf_complex *fifo_ptrs[n_taps]; // an array of pointers to locations that contain fftwf_complex data
-//    // Initialise pointers
-//    for(int t = 0; t < n_taps; t++){
-//        fifo_ptrs[t] = inputBuffer + (t*n_fft);
-//    }
+    fftwf_complex *outputBufferPointer;
+    outputBufferPointer = outputBuffer;
 
-    // Copy fifo to input "space"
-    //memcpy(inputBuffer, fifo, n_taps * n_fft * sizeof(fftwf_complex));
+    int fail = fftwf_import_wisdom_from_filename("fftwf_wisdom.dat");
 
     // Loop over input blocks of size nfft
     #pragma omp parallel
     {
+        fftwf_complex* fftw_in;
+        fftwf_complex* fftw_out;
+        fftw_in = (fftwf_complex*) fftwf_malloc(n_fft * sizeof(fftwf_complex));
+        fftw_out = (fftwf_complex*) fftwf_malloc(n_fft * sizeof(fftwf_complex));
+        fftwf_plan plan;
+
+        #pragma omp critical
+        {
+            plan = fftwf_plan_dft_1d(n_fft, fftw_in, fftw_out, FFTW_FORWARD, FFTW_ESTIMATE);
+        }
+
         fftwf_complex *fifo_ptrs[n_taps]; // an array of pointers to locations that contain fftwf_complex data
         // Get thread id
         int threadID = omp_get_thread_num();
 
-        for(int b = start_gap + threadID * n_fft;
-                     b < n_samp + start_gap;
-                     b += n_fft * numThreads){
         //for (int b = (n_taps-1)*n_fft; b < n_samp + start_gap; b+=n_fft){
+        for(int b = start_gap + threadID * n_fft; b < n_samp + start_gap; b += n_fft * numThreads){
             // Reset fftw_in buffers
             memset(fftw_in, 0, n_fft * sizeof(fftwf_complex));
 
             // Align pointers for this block
             for(int t = 0; t < n_taps; t++){
-                fifo_ptrs[t] = inputBuffer + (t*n_fft) + (b-start_gap);
+                fifo_ptrs[t] = inputBufferPointer + (t*n_fft) + (b-start_gap);
             }
 
             // Loop over ntaps
@@ -141,9 +146,14 @@ void PPF::applyPPF()
             }
 
             // Apply fft and copy directly to output buffer
-            fftwf_execute_dft(plan, fftw_in, outputBuffer + b - start_gap);
+            fftwf_execute_dft(plan, fftw_in, outputBufferPointer + b - start_gap);
             //fftwf_execute_dft(plan, fftw_in, fftw_out);
         }
+
+        //free fifo pointers and other temp arrays
+        //delete[] fifo_ptrs;
+        fftwf_free(fftw_in);
+        fftwf_free(fftw_out);
     }
 //    for (int i = 0; i < n_samp; ++i){
 //        cout << sqrt((outputBuffer[i][0]*outputBuffer[i][0]) + (outputBuffer[i][1]*outputBuffer[i][1])) << endl;
@@ -164,15 +174,24 @@ void PPF::generateLinearChirp(int fs, int duration, float f0, float t1, float f1
     }
 }
 
-void PPF::createFFTPlan()
+void PPF::createFFTPlanWisdom()
 {
-    plan = fftwf_plan_dft_1d(n_fft, fftw_in, fftw_out, FFTW_FORWARD, FFTW_MEASURE);
+    fftwf_complex* fftw_in;
+    fftwf_complex* fftw_out;
+    fftw_in = (fftwf_complex*) fftwf_malloc(n_fft * sizeof(fftwf_complex));
+    fftw_out = (fftwf_complex*) fftwf_malloc(n_fft * sizeof(fftwf_complex));
+
+    fftwf_plan plan = fftwf_plan_dft_1d(n_fft, fftw_in, fftw_out, FFTW_FORWARD, FFTW_EXHAUSTIVE);
 //    fftwf_plan_with_nthreads(omp_get_max_threads());
 //    int n[] = {n_fft};
 //    plan = fftwf_plan_many_dft(1, n, fftblocks,
 //                               fftw_in, n, 1, n_fft,
 //                               fftw_out, n, 1, n_fft,
 //                               FFTW_FORWARD, FFTW_MEASURE);
+
+    int fail = fftwf_export_wisdom_to_filename("fftwf_wisdom.dat");
+    fftwf_free(fftw_in);
+    fftwf_free(fftw_out);
 }
 
 void PPF::printCoefficients()
