@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <iterator>
 #include <sys/time.h>
+#include <xmmintrin.h>
 using namespace std;
 
 class PPF
