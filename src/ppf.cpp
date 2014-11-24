@@ -2,7 +2,7 @@
 
 PPF::PPF(int filter_taps, int fft_points, int blocks, int sampling_rate, int duration_seconds, int n_threads, bool generateWisdom)
 {
-    sse_factor = 8;
+    sse_factor = 4;
     fs = sampling_rate;
     duration = duration_seconds;
     complex_size = sizeof(float)*2;
@@ -26,8 +26,8 @@ PPF::PPF(int filter_taps, int fft_points, int blocks, int sampling_rate, int dur
 
     // PPF coefficients
     n_coefficients = n_taps*n_fft;
-    filterCoeffs = (float*) fftwf_malloc(n_coefficients*sse_factor * sizeof(float));
-    memset(filterCoeffs, 0, n_coefficients*sse_factor * sizeof(float));
+    filterCoeffs = (float*) fftwf_malloc(n_coefficients*2 * sizeof(float)); //*2 for contiguous real/complex weights
+    memset(filterCoeffs, 0, n_coefficients*2 * sizeof(float));
 
 //    // FIFO taps
 //    fifo = (fftwf_complex*) fftwf_malloc(n_fft*n_taps * sizeof(fftwf_complex));
@@ -117,16 +117,19 @@ void PPF::applyPPF()
             // Loop over ntaps
             for(int t = 0; t < n_taps; t++)
             {
-                __m256* pSrc1   = (__m256*) (filterCoeffs + t * n_fft*sse_factor); //coeffs are repeated for real and complex parts
+                __m256* pSrc1   = (__m256*) (filterCoeffs + t * n_fft*2); //coeffs are repeated for real and complex parts
                 __m256* pSrc2   = (__m256*) fifo_ptrs[t];
                 __m256* pResult = (__m256*) fftw_in;
 
                 // Loop over samples
                 for(int s = 0; s < n_fft; s += sse_factor)
                 {
-                    // Apply taps
+                   // Apply taps
                     __m256 m1 = _mm256_mul_ps(*pSrc1, *pSrc2);
                     *pResult  = _mm256_add_ps(*pResult, m1);
+                    // Apply taps
+//                    __m128 m1 = _mm_mul_ps(*pSrc1, *pSrc2);
+//                    *pResult  = _mm_add_ps(*pResult, m1);
 
                     pSrc1++;   // Update coeffs pointer
                     pSrc2++;   // Update fifo pointer
@@ -194,7 +197,7 @@ void PPF::ppfcoefficients()
 {
     int realIdx = 0;
     for (int i = 0; i < n_coefficients; ++i) {
-        realIdx = i*sse_factor;
+        realIdx = i*2; //*2 for contiguous real/complex weights
         filterCoeffs[realIdx] = ((float)i/n_fft - ((float)n_taps/2));
         filterCoeffs[realIdx] = sinc(filterCoeffs[realIdx]) * hanning(i);
         filterCoeffs[realIdx+1] = filterCoeffs[realIdx];
