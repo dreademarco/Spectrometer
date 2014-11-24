@@ -2,6 +2,7 @@
 
 PPF::PPF(int filter_taps, int fft_points, int blocks, int sampling_rate, int duration_seconds, int n_threads, bool generateWisdom)
 {
+    sse_factor = 8;
     fs = sampling_rate;
     duration = duration_seconds;
     complex_size = sizeof(float)*2;
@@ -25,8 +26,8 @@ PPF::PPF(int filter_taps, int fft_points, int blocks, int sampling_rate, int dur
 
     // PPF coefficients
     n_coefficients = n_taps*n_fft;
-    filterCoeffs = (float*) fftwf_malloc(n_coefficients*2 * sizeof(float));
-    memset(filterCoeffs, 0, n_coefficients*2 * sizeof(float));
+    filterCoeffs = (float*) fftwf_malloc(n_coefficients*sse_factor * sizeof(float));
+    memset(filterCoeffs, 0, n_coefficients*sse_factor * sizeof(float));
 
 //    // FIFO taps
 //    fifo = (fftwf_complex*) fftwf_malloc(n_fft*n_taps * sizeof(fftwf_complex));
@@ -75,96 +76,81 @@ PPF::~PPF(){
 
 void PPF::loadInput(fftwf_complex* input){
     // Copy input block to inputBuffer at the end of FIFO location
-    //last tap will point to the first chunk of data of size n_fft
-    memcpy(inputBuffer[(n_taps-1)*n_fft], input, n_samp * sizeof(fftwf_complex));
-//    for (int i = 0; i < n_samp; ++i) {
-//        cout << inputBuffer[i+((n_taps-1)*n_fft)][0] << endl;
-//    }
+    // last tap will point to the first chunk of data of size n_fft
+
+    memcpy(inputBuffer + (n_taps - 1) * n_fft, input, n_samp * sizeof(fftwf_complex));
 }
 
 void PPF::applyPPF()
 {
-    int start_gap = (n_taps-1) * n_fft;
-    fftwf_complex *inputBufferPointer;
-    inputBufferPointer = inputBuffer;
-
-    fftwf_complex *outputBufferPointer;
-    outputBufferPointer = outputBuffer;
-
     fftwf_import_wisdom_from_filename("fftwf_wisdom.dat");
 
     // Loop over input blocks of size nfft
+    #pragma omp parallel
+    {
+        // Loop over input blocks of size nfft
         fftwf_complex* fftw_in;
         fftwf_complex* fftw_out;
         fftw_in = (fftwf_complex*) fftwf_malloc(n_fft * sizeof(fftwf_complex));
         fftw_out = (fftwf_complex*) fftwf_malloc(n_fft * sizeof(fftwf_complex));
         fftwf_plan plan;
-        plan = fftwf_plan_dft_1d(n_fft, fftw_in, fftw_out, FFTW_FORWARD, FFTW_ESTIMATE);
 
-        fftwf_complex *fifo_ptrs[n_taps]; // an array of pointers to locations that contain fftwf_complex data
+        #pragma omp critical
+        {
+            plan = fftwf_plan_dft_1d(n_fft, fftw_in, fftw_out, FFTW_FORWARD, FFTW_ESTIMATE);
+        }
+
+        void *fifo_ptrs[n_taps]; // an array of pointers to locations that contain fftwf_complex data
+
         // Get thread id
         int threadID = omp_get_thread_num();
 
-        for (int b = start_gap; b < n_samp + start_gap; b+=n_fft){
-        //for(int b = start_gap + threadID * n_fft; b < n_samp + start_gap; b += n_fft * numThreads){
+        for(int b = 0 + threadID * n_fft; b < n_samp; b += n_fft * numThreads){
+        //for (int b =  0; b <  n_samp; b += n_fft){
             // Reset fftw_in buffers
             memset(fftw_in, 0, n_fft * sizeof(fftwf_complex));
 
             // Align pointers for this block
-            for(int t = 0; t < n_taps; t++){
-                fifo_ptrs[t] = inputBufferPointer + (t*n_fft) + (b-start_gap);
-            }
+            for(int t = 0; t < n_taps; t++)
+                fifo_ptrs[t] = inputBuffer + (t * n_fft) + b;
 
             // Loop over ntaps
             for(int t = 0; t < n_taps; t++)
             {
-                int nLoop = n_fft * 0.5;
-                __m128 m1;
-                __m128* pSrc1 = (__m128*) (filterCoeffs + t * n_fft);
-                __m128* pSrc2 = (__m128*) fifo_ptrs[t];
-                __m128* pResult = (__m128*) fftw_in;
+                __m256* pSrc1   = (__m256*) (filterCoeffs + t * n_fft*sse_factor); //coeffs are repeated for real and complex parts
+                __m256* pSrc2   = (__m256*) fifo_ptrs[t];
+                __m256* pResult = (__m256*) fftw_in;
 
                 // Loop over samples
-                for(int s = 0; s < nLoop; ++s)
+                for(int s = 0; s < n_fft; s += sse_factor)
                 {
                     // Apply taps
-                    m1 = _mm_mul_ps(*pSrc1, *pSrc2);
-                    *pResult = _mm_add_ps(*pResult, m1);
+                    __m256 m1 = _mm256_mul_ps(*pSrc1, *pSrc2);
+                    *pResult  = _mm256_add_ps(*pResult, m1);
 
                     pSrc1++;   // Update coeffs pointer
                     pSrc2++;   // Update fifo pointer
                     pResult++; // Update fftw_in pointer
-
-
-//                    // Pre-load value to improve ILP
-//                    fftwf_complex value;
-//                    float coeff;
-//                    coeff = filterCoeffs[t * n_fft + s];
-//                    value[0] = (*(fifo_ptrs[t]))[0];
-//                    value[1] = (*(fifo_ptrs[t]))[1];
-
-//                    // Apply taps
-//                    fftw_in[s][0] += value[0] * coeff;
-//                    fftw_in[s][1] += value[1] * coeff;
-
-//                    // Update fifo pointer
-//                    fifo_ptrs[t]++;
                 }
             }
-            for (int i = 0; i < n_fft; ++i) {
-                cout << fftw_in[i][0] << endl;
-                cout << fftw_in[i][1] << endl;
-            }
+
             // Apply fft and copy directly to output buffer
-            fftwf_execute_dft(plan, fftw_in, outputBufferPointer + b - start_gap);
-            //fftwf_execute_dft(plan, fftw_in, fftw_out);
-    }
+            // memcpy(fftw_in, inputBufferPointer + (n_taps - 1) * n_fft + (b - start_gap), n_fft * sizeof(fftwf_complex));
+            fftwf_execute_dft(plan, fftw_in, outputBuffer+b);
+            //memcpy(outputBuffer + b, fftw_out, n_fft * sizeof(fftwf_complex));
+        }
+
         //free fifo pointers and other temp arrays
         fftwf_free(fftw_in);
         fftwf_free(fftw_out);
-//    for (int i = 0; i < n_samp; ++i){
+    }
+
+//    FILE *fp = fopen("output.dat", "wb");
+//    fwrite(outputBuffer, sizeof(fftwf_complex), n_samp, fp);
+//    fclose(fp);
+
+//    for (int i = 0; i < n_samp; ++i)
 //        cout << sqrt((outputBuffer[i][0]*outputBuffer[i][0]) + (outputBuffer[i][1]*outputBuffer[i][1])) << endl;
-//    }
 }
 
 void PPF::generateLinearChirp(int fs, int duration, float f0, float t1, float f1, fftwf_complex* signal)
@@ -177,8 +163,11 @@ void PPF::generateLinearChirp(int fs, int duration, float f0, float t1, float f1
         signal[i][0] = t;
         signal[i][0] = cos(2*M_PI * ( 0.5* beta * (signal[i][0]*signal[i][0]) + f0*signal[i][0]));
         signal[i][1] = 0;
-        //cout << signal[i][0] << endl;
     }
+
+    FILE *fp = fopen("input.dat", "wb");
+    fwrite(signal, sizeof(fftwf_complex), samples, fp);
+    fclose(fp);
 }
 
 void PPF::createFFTPlanWisdom()
@@ -205,7 +194,7 @@ void PPF::ppfcoefficients()
 {
     int realIdx = 0;
     for (int i = 0; i < n_coefficients; ++i) {
-        realIdx = i*2;
+        realIdx = i*sse_factor;
         filterCoeffs[realIdx] = ((float)i/n_fft - ((float)n_taps/2));
         filterCoeffs[realIdx] = sinc(filterCoeffs[realIdx]) * hanning(i);
         filterCoeffs[realIdx+1] = filterCoeffs[realIdx];
@@ -221,6 +210,5 @@ float PPF::hanning(int order)
 
 float PPF::sinc(float x)
 {
-    if(x==0){return 1;}
-    else {return (sin(M_PI*x))/(M_PI*x);}
+    return (x == 0) ? 1 : (sin(M_PI * x)) / (M_PI * x);
 }

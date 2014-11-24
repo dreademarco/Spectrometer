@@ -11,7 +11,10 @@
 #include <algorithm>
 #include <iterator>
 #include <sys/time.h>
-#include <xmmintrin.h>
+////#include <xmmintrin.h> //m128
+//#include <immintrin.h> //m256
+////#include <zmmintrin.h> //m512
+#include <x86intrin.h>
 using namespace std;
 
 class PPF
@@ -37,6 +40,7 @@ private:
     fftwf_complex* chirpsignal;
     int fftblocks;
     int numThreads;
+    int sse_factor;
 
     void loadInput(fftwf_complex* input);
     void applyPPF();
