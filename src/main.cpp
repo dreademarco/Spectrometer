@@ -6,7 +6,7 @@ int main(int argc, char *argv[])
     //QApplication a(argc, argv);
 
     PPF *myPPF;
-    myPPF = new PPF(4,256,300,1024,10000,2,true);
+    myPPF = new PPF(4,256,100,1024,50000,2,true);
     delete myPPF;
     return 1;
 

@@ -21,7 +21,7 @@ f = ((-floor(100*taps/2):(ceil(100*taps/2)-1))/(100*taps))/(t(2)-t(1));
 % Plot the spectrum
 figure(1); plot(f, 20*log10(abs(S)));
 
-figure(2), plot(f,angle(S.*exp(1i*2*pi*f*(127.5/1024)))*180/pi);
+figure(2); plot(f,angle(S.*exp(1i*2*pi*f*(127.5/1024)))*180/pi);
 axis([-16 16 -180 180]);
 
 pause

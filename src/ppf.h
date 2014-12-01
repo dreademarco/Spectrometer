@@ -47,6 +47,9 @@ private:
     void generateLinearChirp(int fs, int duration, float f0, float t1, float f1, fftwf_complex* signal);
     void createFFTPlanWisdom();
     void calculateTapOutput(int block_counter);
+    void fftShift(fftwf_complex* in, fftwf_complex* out);
+    void circShift(fftwf_complex* in, fftwf_complex* out, int k);
+    void angle(fftwf_complex* in, float* out);
     void ppfcoefficients();
     float hanning(int order);
     float sinc(float x);

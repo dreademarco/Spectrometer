@@ -16,6 +16,13 @@ PPF::PPF(int filter_taps, int fft_points, int blocks, int sampling_rate, int dur
     omp_set_num_threads(numThreads);
     //fftwf_init_threads();
 
+//    float* pre_shift; float* post_shift;
+//    pre_shift = (float*) fftwf_malloc(5 * sizeof(float)); post_shift = (float*) fftwf_malloc(5 * sizeof(float));
+//    memset(post_shift, 0, 5 * sizeof(float));
+
+//    pre_shift[0] = 1; pre_shift[1] = 2; pre_shift[2] = 3; pre_shift[3] = 4; pre_shift[4] = 5;
+//    this->circShift(pre_shift,post_shift,2);
+
     // Input buffer (first tap is also the first n_fft chunk of the signal)
     inputBuffer = (fftwf_complex*) fftwf_malloc((((n_taps-1) * n_fft) + n_samp) * sizeof(fftwf_complex));
     memset(inputBuffer, 0, (((n_taps-1) * n_fft) + n_samp) * sizeof(fftwf_complex));
@@ -42,7 +49,7 @@ PPF::PPF(int filter_taps, int fft_points, int blocks, int sampling_rate, int dur
         createFFTPlanWisdom(); //generate fftw wisdom
     }
 
-    generateLinearChirp(fs,duration,0,duration/2,100,chirpsignal);
+    generateLinearChirp(fs,duration,0,duration/4,700,chirpsignal);
     // MATLAB: spectrogram(chirp,256,128,256,1024,'yaxis')
     loadInput(chirpsignal);
     fftwf_free(chirpsignal);
@@ -110,7 +117,6 @@ void PPF::applyPPF()
             // Reset fftw_in buffers
             memset(fftw_in, 0, n_fft * sizeof(fftwf_complex));
 
-            // Align pointers for this block
             for(int t = 0; t < n_taps; t++)
                 fifo_ptrs[t] = inputBuffer + (t * n_fft) + b;
 
@@ -138,9 +144,7 @@ void PPF::applyPPF()
             }
 
             // Apply fft and copy directly to output buffer
-            // memcpy(fftw_in, inputBufferPointer + (n_taps - 1) * n_fft + (b - start_gap), n_fft * sizeof(fftwf_complex));
             fftwf_execute_dft(plan, fftw_in, outputBuffer+b);
-            //memcpy(outputBuffer + b, fftw_out, n_fft * sizeof(fftwf_complex));
         }
 
         //free fifo pointers and other temp arrays
@@ -203,6 +207,30 @@ void PPF::ppfcoefficients()
         filterCoeffs[realIdx+1] = filterCoeffs[realIdx];
     }
     //reverse(filterCoeffs, filterCoeffs+n_coefficients);
+}
+
+void PPF::fftShift(fftwf_complex* in, fftwf_complex* out)
+{
+    circShift(in,out,n_fft/2);
+}
+
+void PPF::circShift(fftwf_complex* in, fftwf_complex* out, int k)
+{
+    if(k>n_fft)
+    {
+         k = k % n_fft; //in case k>n_fft
+    }
+    int idxStartOffset = n_fft-k;
+    int idxStartBytesOffset = idxStartOffset*sizeof(fftwf_complex);
+    int startBytes = k*sizeof(fftwf_complex);
+    memcpy(&out[0],&in[idxStartOffset],startBytes);
+    memcpy(&out[k],&in[0],idxStartBytesOffset);
+}
+
+void PPF::angle(fftwf_complex* in, float* out){
+    for (int i = 0; i < n_fft; ++i) {
+        out[i] = atan2f(in[i][1],in[i][0]);
+    }
 }
 
 

@@ -5,7 +5,7 @@ import struct
 import itertools
 from math import *
 
-nchans = 16384
+nchans = 256
 
 def plot_input():
     # Load file
@@ -28,11 +28,12 @@ def plot_output():
     data = fp.read()
     data = struct.unpack('f' * (len(data) / 4), data)
     data = zip(*(iter(data),) * 2)
-    print data    
+    # print data    
     data = np.array([sqrt(i[0] * i[0] + i[1] * i[1]) for i in data])
     data = np.reshape(data, (len(data) / nchans, nchans))
     plt.imshow(data.T, interpolation='nearest', aspect='auto')
     plt.colorbar()
+    plt.clim(0,300)
     plt.show()
 
 
