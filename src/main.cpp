@@ -2,7 +2,7 @@
 #include "fft_speedtest.h"
 #include <QApplication>
 
-int ntaps = 4, nchans = 512, nblocks = 100, srate = 1024, tobs = 10000, nthreads = 1;
+int ntaps = 4, nchans = 1024, nblocks = 16, srate = 1024, tobs = 16384*16*4, nthreads = 4;
 
 void processArgs(int argc, char *argv[])
 {
@@ -32,19 +32,19 @@ int main(int argc, char *argv[])
 {
     //QApplication a(argc, argv);
 
-    printf("ntaps: %d, nchans: %d, nthreads: %d, tobs: %d, srate; %d\n", ntaps, nchans, nthreads, tobs, srate);
-    fft_speedtest *myfft_speedtest;
-    myfft_speedtest = new fft_speedtest(ntaps, nchans, srate, tobs, nthreads);
-    delete myfft_speedtest;
-    return 1;
+//    printf("ntaps: %d, nchans: %d, nthreads: %d, tobs: %d, srate; %d\n", ntaps, nchans, nthreads, tobs, srate);
+//    fft_speedtest *myfft_speedtest;
+//    myfft_speedtest = new fft_speedtest(ntaps, nchans, srate, tobs, nthreads);
+//    delete myfft_speedtest;
+//    return 1;
 
 //    // Process Arguments
-//    processArgs(argc, argv);
-//    printf("ntaps: %d, nchans: %d, nthreads: %d, tobs: %d, srate; %d\n", ntaps, nchans, nthreads, tobs, srate);
-//    PPF *myPPF;
-//    myPPF = new PPF(ntaps, nchans, nblocks, srate, tobs, nthreads, true);
-//    delete myPPF;
-//    return 1;
+    processArgs(argc, argv);
+    printf("ntaps: %d, nchans: %d, nthreads: %d, tobs: %d, srate; %d\n", ntaps, nchans, nthreads, tobs, srate);
+    PPF *myPPF;
+    myPPF = new PPF(ntaps, nchans, nblocks, srate, tobs, nthreads, true);
+    delete myPPF;
+    return 1;
 
     //MainWindow w;
     //w.show();
