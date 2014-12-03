@@ -2,7 +2,7 @@
 #include "fft_speedtest.h"
 #include <QApplication>
 
-int ntaps = 4, nchans = 512, nblocks = 100, srate = 1024, tobs = 10000, nthreads = 2;
+int ntaps = 4, nchans = 512, nblocks = 100, srate = 1024, tobs = 10000, nthreads = 1;
 
 void processArgs(int argc, char *argv[])
 {

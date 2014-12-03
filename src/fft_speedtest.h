@@ -41,8 +41,8 @@ private:
 
     void loadInput(fftwf_complex* input);
     void loadInputFromFile(char *filename);
-    void apply_seqFFT(fftwf_plan plan);
-    void apply_blockFFT(fftwf_plan plan);
+    void apply_seqFFT(fftwf_plan plan,fftwf_complex* fftw_in,fftwf_complex* fftw_out);
+    void apply_blockFFT(fftwf_plan plan,fftwf_complex* fftw_in,fftwf_complex* fftw_out);
     void generateLinearChirp(int fs, int duration, float f0, float t1, float f1, fftwf_complex* signal);
     void createFFTPlanWisdom_sequential();
     void createFFTPlanWisdom_block();
