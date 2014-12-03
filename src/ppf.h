@@ -43,6 +43,7 @@ private:
     int sse_factor;
 
     void loadInput(fftwf_complex* input);
+    void loadInputFromFile(char *filename);
     void applyPPF();
     void generateLinearChirp(int fs, int duration, float f0, float t1, float f1, fftwf_complex* signal);
     void createFFTPlanWisdom();
@@ -51,6 +52,7 @@ private:
     void circShift(fftwf_complex* in, fftwf_complex* out, int k);
     void angle(fftwf_complex* in, float* out);
     void ppfcoefficients();
+    float hamming(int order,float alpha);
     float hanning(int order);
     float sinc(float x);
 };

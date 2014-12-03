@@ -13,6 +13,7 @@ import math
 import numpy
 import matplotlib.pyplot as plotter
 import struct, cmath
+numpy.set_printoptions(threshold=numpy.nan)
 
 # function definitions
 def PrintUsage(ProgName):
@@ -78,6 +79,7 @@ X = numpy.array([(float(i) / NFFT) - (float(NTaps) / 2) for i in range(M)])
 plotter.plot(X)
 plotter.show()
 PFBCoeff = numpy.sinc(X) * numpy.hanning(M)
+print len(PFBCoeff)
 
 print PFBCoeff
 

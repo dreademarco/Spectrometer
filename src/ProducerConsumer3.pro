@@ -30,7 +30,8 @@ SOURCES += main.cpp\
     plotter.cpp \
     framedata.cpp \
     framedatacomplex.cpp \
-    ppf.cpp
+    ppf.cpp \
+    fft_speedtest.cpp
 
 HEADERS  += mainwindow.h \
     array2dworker.h \
@@ -52,7 +53,8 @@ HEADERS  += mainwindow.h \
     plotter.h \
     framedata.h \
     framedatacomplex.h \
-    ppf.h
+    ppf.h \
+    fft_speedtest.h
 
 FORMS    += mainwindow.ui
 

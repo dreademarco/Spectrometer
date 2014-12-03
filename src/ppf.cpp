@@ -41,18 +41,20 @@ PPF::PPF(int filter_taps, int fft_points, int blocks, int sampling_rate, int dur
 //    memset(fifo, 0, n_fft*n_taps * sizeof(fftwf_complex));
 
     // chirp data
-    chirpsignal = (fftwf_complex*) fftwf_malloc(fs*duration * sizeof(fftwf_complex));
-    memset(chirpsignal, 0, fs*duration * sizeof(fftwf_complex));
+//    chirpsignal = (fftwf_complex*) fftwf_malloc(fs*duration * sizeof(fftwf_complex));
+//    memset(chirpsignal, 0, fs*duration * sizeof(fftwf_complex));
 
     ppfcoefficients(); // generate weights
-    if(generateWisdom){
-        createFFTPlanWisdom(); //generate fftw wisdom
-    }
+//    if(generateWisdom){
+//        createFFTPlanWisdom(); //generate fftw wisdom
+//    }
 
-    generateLinearChirp(fs,duration,0,duration/4,700,chirpsignal);
+//    generateLinearChirp(fs,duration,0,duration/4,700,chirpsignal);
     // MATLAB: spectrogram(chirp,256,128,256,1024,'yaxis')
-    loadInput(chirpsignal);
-    fftwf_free(chirpsignal);
+//    loadInput(chirpsignal);
+//    fftwf_free(chirpsignal);
+
+    loadInputFromFile("input_file.dat");
 
     timeval t1, t2;
     double elapsedTime;
@@ -88,6 +90,26 @@ void PPF::loadInput(fftwf_complex* input){
     memcpy(inputBuffer + (n_taps - 1) * n_fft, input, n_samp * sizeof(fftwf_complex));
 }
 
+// Load test input signal from file
+void PPF::loadInputFromFile(char *filename)
+{
+    FILE *fp = fopen(filename, "rb");
+
+    float *temp = (float *) malloc(n_samp * sizeof(float));
+    fread(temp, sizeof(float), n_samp, fp);
+
+    // Tgerfixa totali
+    for(unsigned i = 0; i < n_samp; i++)
+    {
+        inputBuffer[(n_taps - 1) * n_fft + i][0] = temp[i];
+        inputBuffer[(n_taps - 1) * n_fft + i][1] = 0;
+        //printf("%f  ", temp[i]);
+    }
+
+    free(temp);
+    fclose(fp);
+}
+
 void PPF::applyPPF()
 {
     fftwf_import_wisdom_from_filename("fftwf_wisdom.dat");
@@ -112,10 +134,11 @@ void PPF::applyPPF()
         // Get thread id
         int threadID = omp_get_thread_num();
 
-        for(int b = 0 + threadID * n_fft; b < n_samp; b += n_fft * numThreads){
+        for(int b = threadID * n_fft; b < n_samp; b += n_fft * numThreads){
         //for (int b =  0; b <  n_samp; b += n_fft){
             // Reset fftw_in buffers
             memset(fftw_in, 0, n_fft * sizeof(fftwf_complex));
+            //memcpy(fftw_in, inputBuffer + b + (n_taps - 1) * n_fft, n_fft * sizeof(fftwf_complex));
 
             for(int t = 0; t < n_taps; t++)
                 fifo_ptrs[t] = inputBuffer + (t * n_fft) + b;
@@ -133,9 +156,6 @@ void PPF::applyPPF()
                    // Apply taps
                     __m256 m1 = _mm256_mul_ps(*pSrc1, *pSrc2);
                     *pResult  = _mm256_add_ps(*pResult, m1);
-                    // Apply taps
-//                    __m128 m1 = _mm_mul_ps(*pSrc1, *pSrc2);
-//                    *pResult  = _mm_add_ps(*pResult, m1);
 
                     pSrc1++;   // Update coeffs pointer
                     pSrc2++;   // Update fifo pointer
@@ -144,7 +164,7 @@ void PPF::applyPPF()
             }
 
             // Apply fft and copy directly to output buffer
-            fftwf_execute_dft(plan, fftw_in, outputBuffer+b);
+            fftwf_execute_dft(plan, fftw_in, outputBuffer + b);
         }
 
         //free fifo pointers and other temp arrays
@@ -152,12 +172,12 @@ void PPF::applyPPF()
         fftwf_free(fftw_out);
     }
 
-//    FILE *fp = fopen("output.dat", "wb");
-//    fwrite(outputBuffer, sizeof(fftwf_complex), n_samp, fp);
-//    fclose(fp);
+    for (int i = 0; i < n_samp; ++i)
+        cout << sqrt((outputBuffer[i][0]*outputBuffer[i][0]) + (outputBuffer[i][1]*outputBuffer[i][1])) << endl;
 
-//    for (int i = 0; i < n_samp; ++i)
-//        cout << sqrt((outputBuffer[i][0]*outputBuffer[i][0]) + (outputBuffer[i][1]*outputBuffer[i][1])) << endl;
+    FILE *fp = fopen("output_file.dat", "wb");
+    fwrite(outputBuffer, sizeof(fftwf_complex), n_samp, fp);
+    fclose(fp);
 }
 
 void PPF::generateLinearChirp(int fs, int duration, float f0, float t1, float f1, fftwf_complex* signal)
@@ -203,10 +223,10 @@ void PPF::ppfcoefficients()
     for (int i = 0; i < n_coefficients; ++i) {
         realIdx = i*2; //*2 for contiguous real/complex weights
         filterCoeffs[realIdx] = ((float)i/n_fft - ((float)n_taps/2));
-        filterCoeffs[realIdx] = sinc(filterCoeffs[realIdx]) * hanning(i);
+        //filterCoeffs[realIdx] = sinc(filterCoeffs[realIdx]) * hanning(i);
+        filterCoeffs[realIdx] = sinc(filterCoeffs[realIdx]) * hamming(i,0.54);
         filterCoeffs[realIdx+1] = filterCoeffs[realIdx];
     }
-    //reverse(filterCoeffs, filterCoeffs+n_coefficients);
 }
 
 void PPF::fftShift(fftwf_complex* in, fftwf_complex* out)
@@ -237,6 +257,12 @@ void PPF::angle(fftwf_complex* in, float* out){
 float PPF::hanning(int order)
 {
     return 0.5 * (1 - cos(2*M_PI*order/(n_coefficients-1)));
+}
+
+float PPF::hamming(int order, float alpha)
+{
+    float beta = 1-alpha;
+    return alpha - beta*(cos(2*M_PI*order/(n_coefficients-1)));
 }
 
 float PPF::sinc(float x)
