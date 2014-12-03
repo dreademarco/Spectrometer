@@ -9,12 +9,12 @@ import pickle
 if __name__ == "__main__":
 
     # Define global for run
-    nthreads = 1
-    nblocks  = 1
+    nthreads = 2
+    nblocks  = 8
     bw       = 1024
     tobs     = 10
-    ntaps    = 16
-    nchans   = 32
+    ntaps    = 4
+    nchans   = 16
     nfreq_points = (nchans * 21)
     freq_step = bw / float(nfreq_points)
 

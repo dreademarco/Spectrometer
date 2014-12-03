@@ -2,7 +2,7 @@
 #include "fft_speedtest.h"
 #include <QApplication>
 
-int ntaps = 4, nchans = 1024, nblocks = 16, srate = 1024, tobs = 16384*16*4, nthreads = 4;
+int ntaps = 4, nchans = 256, nblocks = 16, srate = 1024, tobs = 100000, nthreads = 2;
 
 void processArgs(int argc, char *argv[])
 {
@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
 //    delete myfft_speedtest;
 //    return 1;
 
-//    // Process Arguments
+    // Process Arguments
     processArgs(argc, argv);
     printf("ntaps: %d, nchans: %d, nthreads: %d, tobs: %d, srate; %d\n", ntaps, nchans, nthreads, tobs, srate);
     PPF *myPPF;
