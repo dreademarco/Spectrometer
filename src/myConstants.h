@@ -1,15 +1,26 @@
 #ifndef MYCONSTANTS_H
 #define MYCONSTANTS_H
-//const int DataSize = 100000;
-//const int BufferSize = 8192;
 
+// CPU CONFIG
+const int sse_factor = 4;
+const int nthreads = 2;
 
-const int overallSamples = 5000000; //total samples to generate
-const int samplesSize = 5000000; //max samples in buffer
-const int spectSize = 1000; //samples to plot
-const int guiUpdateSize = 1000; //samples to process before GUI progress update
-const int block = 500; //block size for locking
-const int freqBins = 256; //spectrogram has 256 frequency bins
-const int integrationfactor = 100;
+// OPTIMIZATION CONFIG
+const int nblocks = 16;
+
+// general global variables
+//const int tobs = 8;
+const int tobs = 10000;
+
+//const int integrationfactor = 1;
+
+//const int tobs_buffer = ((nblocks * nthreads * nchans)/srate)*2;
+//const int tobs_buffer = 16;
+
+// plotter variables
+//const int spectSize = (((tobs_buffer*srate)/integrationfactor)/nchans); //samples to plot in a spectrogram (spectSize samples with nchans each)
+//const int spectSize = 64; //samples to plot in a spectrogram (spectSize samples with nchans each)
+//const int guiUpdateSize = spectSize; // samples to process before GUI progress update
+//const int samplesprocessed = spectSize; //collect and process data from buffer at a different rate
 
 #endif // MYCONSTANTS_H

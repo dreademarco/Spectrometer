@@ -19,7 +19,7 @@ class SpectrogramPlot : public QwtPlot
     Q_OBJECT
 public:
     SpectrogramPlot(QWidget * = NULL);
-    void pushNewData(SpectrogramData<float> *myData);
+    void pushNewData(SpectrogramData *myData);
     void setupAxis();
     //explicit SpectrogramPlot(QObject *parent = 0);
 

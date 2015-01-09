@@ -12,17 +12,16 @@ SpectrogramPlot::SpectrogramPlot(QWidget *parent) :
     //mySpectrogramPlot->setCachePolicy(QwtPlotRasterItem::PaintCache);
     mySpectrogramPlot->attach(this);
     this->initialSetup = true;
-    //this->setAutoReplot(true);
 
     plotLayout()->setAlignCanvasToScales(true);
     replot();
 }
 
-void SpectrogramPlot::pushNewData(SpectrogramData<float> *myData){
+void SpectrogramPlot::pushNewData(SpectrogramData *myData){
     mySpectrogramPlot->setData(myData);
     if(initialSetup){
         setupAxis();
-    }
+    }    
 }
 
 void SpectrogramPlot::showSpectrogram(bool on)

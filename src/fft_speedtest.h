@@ -1,9 +1,6 @@
 #ifndef FFT_SPEEDTEST_H
 #define FFT_SPEEDTEST_H
 
-#include "array2dspectrum.h"
-#include "circulararray2dspectrum.h"
-
 #include <fftw3.h>
 #include <math.h>
 #include <iostream>

@@ -1,18 +1,12 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
-#include "consumer.h"
-#include "producer.h"
-#include "producerunsafe.h"
-#include "consumerunsafe.h"
+
 #include "spectrogramplot.h"
 #include "common.h"
-#include "circulararray2dworker.h"
-#include "circulararray2dworkersafe.h"
-#include "circulararray2dworkerthreaded.h"
-#include "circulararray2dspectrumthreaded.h"
+#include "fftwsequence.h"
+#include "fftwsequencecircularthreaded.h"
 #include "pipeline.h"
 #include "plotter.h"
-#include "ppf.h"
 #include <QMainWindow>
 
 namespace Ui {
@@ -30,23 +24,30 @@ public:
 private slots:
     void on_startPushButton_clicked();
 
+    void on_comboBox_chans_currentIndexChanged(const QString &arg1);
+
+    void on_comboBox_srate_currentIndexChanged(const QString &arg1);
+
 private:
+    FFTWSequenceCircularThreaded *rawSourceDataBlock;
+    FFTWSequenceCircularThreaded *pipelineSourceDataBlock;
     Ui::MainWindow *ui;
-    //Producer *producer_thread;
-    //Consumer *consumer_thread;
-    //ProducerUnsafe *unsafeProducer_thread;
-    //ConsumerUnsafe *unsafeConsumer_thread;
     QThread *pipeline_thread;
     QThread *plotter_thread;
     Pipeline *pipeline;
     Plotter *plotter;
-    //Pipeline *pipeline_thread;
-    //Plotter *plotter_thread;
+    void generateLinearChirp(int fs, int duration, float f0, float t1, float f1, fftwf_complex* signal);
+
+    //config vars
+    int integFactor;
+    int ppftaps;
+    int chans;
+    int fs;
+    int buf_factor;
+    int bufsize;
+    int spectsize;
 
 public slots:
-    void onBufferValueChanged(int);
-    void onProducerValueChanged(int);
-    void onConsumerValueChanged(int);
     void spectrogramPlotUpdate();
     void terminatePlotter();
     void terminatePipeline();

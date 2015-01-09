@@ -6,26 +6,28 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "array2dworker.h"
-#include "circulararray2dworker.h"
-#include "circulararray2dworkerthreaded.h"
-#include "circulararray2dspectrum.h"
-#include "circulararray2dspectrumthreaded.h"
+#include "fftwsequencecircularthreaded.h"
+//#include "array2dworker.h"
+//#include "circulararray2dworker.h"
+//#include "circulararray2dworkerthreaded.h"
+//#include "circulararray2dspectrum.h"
+//#include "circulararray2dspectrumthreaded.h"
 
-template <typename T>
 class SpectrogramData : public QwtRasterData
 {
 public:
-    SpectrogramData(CircularArray2DSpectrum<T> *data, int freq_bins,int samples);
+    SpectrogramData(FFTWSequenceCircular *data, int freq_bins,int samples);
     virtual double value( double x, double y ) const;
-    CircularArray2DSpectrum<T> *dataArray;
-    void addData(T* columnData);
-    void addDataSection(Array2DSpectrum<T> *blockData);
-    void fastAddDataSection(CircularArray2DSpectrumThreaded<T> *sourceDataBlock,int copySize);
-    void fastAddDataSectionMemCpy(CircularArray2DSpectrumThreaded<T> *sourceDataBlock, int copySize);
+    FFTWSequenceCircular *dataArray;
+    void addData(fftwf_complex* columnData);
+    void addDataSection(FFTWSequence *blockData);
+    void fastAddDataSection(FFTWSequenceCircularThreaded *sourceDataBlock,int copySize);
+    void fastAddDataSectionMemCpy(FFTWSequenceCircularThreaded *sourceDataBlock, int copySize);
     void resetData();
-//private:
-//    Array2DWorker<float> *dataArray;
+    void fixIntensityInterval(double value);
+
+private:
+    double highestIntensity;
 };
 
 #endif // SPECTROGRAMDATA_H

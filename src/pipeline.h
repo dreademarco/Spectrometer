@@ -8,17 +8,19 @@
 
 #include "common.h"
 #include "stdio.h"
-#include "circulararray2dspectrumthreaded.h"
+#include "fftwsequencecircularthreaded.h"
+#include "streamingppf.h"
 
 class Pipeline : public QObject
 {
     Q_OBJECT
 public:
-    Pipeline(CircularArray2DSpectrumThreaded<float> *sourceDataBlock = NULL, CircularArray2DSpectrumThreaded<float> *outputDataBlock = NULL, int chunkSize = 0, int integrationFactor = 1, QObject *parent = 0);
+    Pipeline(FFTWSequenceCircularThreaded *sourceDataBlock = NULL, FFTWSequenceCircularThreaded *outputDataBlock = NULL, int blockSize = 0, int selectedIntegrationFactor = 1, int selectedTaps = 4, int selectedChans=256, int selectedFs = 1024, int selectedBufferTobs=1, QObject *parent = 0);
     ~Pipeline();
-    void fastLoadDataInWorkSpaceMemCpy();
-    void fastLoadDataToOutputStreamMemCpy();
+    int fastLoadDataInWorkSpaceMemCpy();
+    void fastLoadDataToOutputStreamMemCpy(int samplesToPush);
     void doIntegration();
+    void doMagnitude();
 
 public slots:
     void start();
@@ -26,16 +28,24 @@ public slots:
 signals:
     void done();
 
-private:
-    CircularArray2DSpectrumThreaded<float> *sourceStream;
-    CircularArray2DSpectrumThreaded<float> *outputStream;
-    int chunkSize;
-    Array2DSpectrum<float> *inputWorkspace;
-    Array2DSpectrum<float> *outputWorkspace;
+private:        
+    StreamingPPF *ppf;
+    FFTWSequenceCircularThreaded *sourceStream;
+    FFTWSequenceCircularThreaded *outputStream;
+    int blocks;
+    FFTWSequence *inputWorkspace;
+    FFTWSequence *inputWorkspace2;
+    FFTWSequence *outputWorkspace;
+    int tobs_buffer;
     int integrationFactor;
+    int ntaps;
+    int nchans;
+    int srate;
     int placements;
+    int prevPlacements;
     bool loop;
     int samplesToGather;
+    void setupCPU();
 };
 
 #endif // PIPELINE_H

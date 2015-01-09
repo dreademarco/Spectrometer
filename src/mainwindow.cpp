@@ -5,113 +5,29 @@
 #include <stdio.h>
 using namespace std;
 
-CircularArray2DWorker<float> *dataBlock;
-CircularArray2DSpectrumThreaded<float> *safeDataBlock;
-CircularArray2DSpectrumThreaded<float> *outputDataBlock;
-
-CircularArray2DSpectrumThreaded<float> *rawSourceDataBlock;
-CircularArray2DSpectrumThreaded<float> *pipelineSourceDataBlock;
-
-SpectrogramData<float> *mySpectData;
-CircularArray2DSpectrum<float> *tempColumns;
-CircularArray2DWorker<float> *test;
-
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    // progress bar range setup
-    ui->producerProgressBar->setRange(0, overallSamples);
-    ui->consumerProgressBar->setRange(0, overallSamples);
-    ui->bufferProgressBar->setRange(0, samplesSize);
-
-    //initialize raw dataBlock, and populate it
-    rawSourceDataBlock = new CircularArray2DSpectrumThreaded<float>(freqBins,samplesSize);
-    int placements = 0;
-    while(placements<samplesSize){
-        float sampleData[freqBins];
-        for (int j = 0; j < freqBins; ++j) {
-            //sampleData[j]=(float)j/freqBins; //constant values along frequency
-            sampleData[j]=(float)placements/samplesSize; //constant values along samples
-        }
-        rawSourceDataBlock->writeSample(sampleData);
-        ++placements;
-    }
-
-    //initialize pipeline datablock
-    pipelineSourceDataBlock = new CircularArray2DSpectrumThreaded<float>(freqBins,samplesSize);
 
     pipeline_thread = new QThread; // First thread
     plotter_thread = new QThread; // Second thread
 
-    // make pipeline thread
-    //pipeline_thread = new Pipeline(this, rawSourceDataBlock, pipelineSourceDataBlock, block, integrationfactor);
-    pipeline = new Pipeline(rawSourceDataBlock, pipelineSourceDataBlock, block, integrationfactor);
-    connect(pipeline_thread, SIGNAL(started()), pipeline, SLOT(start()));
-
-    // make plotter thread
-    //lotter_thread = new Plotter(this,pipelineSourceDataBlock,block,integrationfactor,ui->plotWidget);
-    plotter = new Plotter(pipelineSourceDataBlock,block,integrationfactor,ui->plotWidget);
-    connect(plotter_thread, SIGNAL(started()), plotter, SLOT(start()));
-
-    // connect signal/slot for SpectrogramPlot
-    connect(plotter, SIGNAL(readyForPlot()),this,SLOT(spectrogramPlotUpdate()));
-    connect(plotter, SIGNAL(done()),this,SLOT(terminatePlotter()));
-    connect(pipeline, SIGNAL(done()),this,SLOT(terminatePipeline()));
-
-//    //initialize dataBlock
-//    //safeDataBlock = new CircularArray2DWorkerSafe<float>(CircularArray2DWorkerSafe<float>::WRITER,false,freqBins,samplesSize);
-//    safeDataBlock = new CircularArray2DSpectrumThreaded<float>(freqBins,samplesSize);
-//    outputDataBlock = new CircularArray2DSpectrumThreaded<float>(freqBins,samplesSize);
-
-//    //initialize SpectrogramData
-//    tempColumns = new CircularArray2DSpectrum<float>(freqBins,spectSize);
-//    mySpectData = new SpectrogramData<float>(tempColumns,freqBins,spectSize);
-
-//    int placements = 0;
-//    while(placements<samplesSize){
-//        float sampleData[freqBins];
-//        for (int j = 0; j < freqBins; ++j) {
-//            //slightly faster simple value (182 Mhz)
-//            //sampleData[j]=(float)j/freqBins; //constant values along frequency
-//            sampleData[j]=(float)placements/samplesSize; //constant values along samples
-//        }
-//        safeDataBlock->writeSample(sampleData);
-//        ++placements;
-//    }
-
-//    // make producer thread
-//    //unsafeProducer_thread = new ProducerUnsafe(this,safeDataBlock);
-//    // make consumer thread
-//    //unsafeConsumer_thread = new ConsumerUnsafe(this, safeDataBlock, mySpectData, ui->plotWidget);
-//    // make pipeline_thread
-//    //pipeline_thread = new Pipeline(this, safeDataBlock, outputDataBlock, block, 2);
-
-//    // connect signal/slot for SpectrogramPlot
-//    //connect(unsafeConsumer_thread, SIGNAL(spectDataReceived()),this,SLOT(spectrogramPlotUpdate()));
-
-////    // connect signal/slot for the buffer progress bar
-////    connect(unsafeConsumer_thread, SIGNAL(bufferFillCountChanged(int)),this,SLOT(onBufferValueChanged(int)));
-////    connect(unsafeProducer_thread, SIGNAL(bufferFillCountChanged(int)),this,SLOT(onBufferValueChanged(int)));
-
-////    // connect signal/slot for consumer/producer progress bar
-////    connect(unsafeConsumer_thread, SIGNAL(consumerCountChanged(int)),this,SLOT(onConsumerValueChanged(int)));
-////    connect(unsafeProducer_thread, SIGNAL(producerCountChanged(int)),this,SLOT(onProducerValueChanged(int)));
-
-
+    int chosen_srate = ui->comboBox_srate->currentText().toInt();
+    int chosen_chans = ui->comboBox_chans->currentText().toInt();
+    ui->label_bufsize->setText(QString::number(((nblocks * nthreads * chosen_chans)/chosen_srate)*2));
 }
 
 MainWindow::~MainWindow()
 {
-    delete ui;
-    delete tempColumns;
-    //delete safeDataBlock;
-    delete dataBlock;
-    delete plotter_thread;
-    delete pipeline_thread;
     delete plotter;
     delete pipeline;
+    delete plotter_thread;
+    delete pipeline_thread;
+    delete rawSourceDataBlock;
+    delete pipelineSourceDataBlock;
+    delete ui;
 }
 
 void MainWindow::spectrogramPlotUpdate()
@@ -121,37 +37,87 @@ void MainWindow::spectrogramPlotUpdate()
 
 void MainWindow::terminatePlotter(){
     plotter_thread->quit();
+    //ui->startPushButton->setEnabled(true);
 }
 
 void MainWindow::terminatePipeline(){
     pipeline_thread->quit();
 }
 
-void MainWindow::onBufferValueChanged(int bCount)
-{
-    ui->bufferProgressBar->setValue(bCount);
-}
-
-void MainWindow::onProducerValueChanged(int pCount)
-{
-    ui->producerProgressBar->setValue(pCount);
-}
-
-void MainWindow::onConsumerValueChanged(int cCount)
-{
-    ui->consumerProgressBar->setValue(cCount);
-}
-
 void MainWindow::on_startPushButton_clicked()
-{
+{    
     // disable the start button
     ui->startPushButton->setEnabled(false);
 
+    integFactor = ui->comboBox_integrationFactor->currentText().toInt();
+    ppftaps = ui->comboBox_taps->currentText().toInt();
+    chans = ui->comboBox_chans->currentText().toInt();
+    fs = ui->comboBox_srate->currentText().toInt();
+    buf_factor = ui->comboBox_bufferFactor->currentText().toInt();
+    bufsize = ui->label_bufsize->text().toInt();
+    spectsize = ui->comboBox_spectSamples->currentText().toInt();
+
+    // progress bar range setup
+    int nsamp = tobs*fs;
+
+    //initialize raw dataBlock, and populate it
+    rawSourceDataBlock = new FFTWSequenceCircularThreaded(1,nsamp);
+    generateLinearChirp(fs,tobs,0,tobs/2,200,rawSourceDataBlock->data);
+    //generateLinearChirp(srate, tobs, 0, tobs/4, 500, rawSourceDataBlock->data);
+    //generateLinearChirp(fs,duration,0,duration/4,700,chirpsignal);
+    for (int i = 0; i < nsamp; ++i) {
+        rawSourceDataBlock->increaseUsedSpaces();
+    }
+
+    //initialize pipeline datablock
+    pipelineSourceDataBlock = new FFTWSequenceCircularThreaded(chans,(nsamp/integFactor)/chans);
+
+    // make pipeline thread
+    pipeline = new Pipeline(rawSourceDataBlock, pipelineSourceDataBlock, nblocks, integFactor, ppftaps, chans, fs, buf_factor*bufsize);
+    connect(pipeline_thread, SIGNAL(started()), pipeline, SLOT(start()));
+
+    // make plotter thread
+    plotter = new Plotter(pipelineSourceDataBlock,ui->plotWidget,spectsize,chans,fs,integFactor);
+    connect(plotter_thread, SIGNAL(started()), plotter, SLOT(start()));
+
+    // connect signal/slot for SpectrogramPlot
+    connect(plotter, SIGNAL(readyForPlot()),this,SLOT(spectrogramPlotUpdate()));
+    connect(plotter, SIGNAL(done()),this,SLOT(terminatePlotter()));
+    connect(pipeline, SIGNAL(done()),this,SLOT(terminatePipeline()));
+
     // threads start
-    //unsafeProducer_thread->start();
-    //unsafeConsumer_thread->start();
     plotter->moveToThread(plotter_thread);
     pipeline->moveToThread(pipeline_thread);
     //plotter_thread->start();
     pipeline_thread->start();
+}
+
+void MainWindow::generateLinearChirp(int fs, int duration, float f0, float t1, float f1, fftwf_complex* signal)
+{
+    int samples = fs*duration;
+    float beta = (f1-f0)/t1;
+    float interval = (float)duration/samples;
+    for (int i = 0; i < samples; ++i) {
+        float t = float(i)*interval;
+        signal[i][0] = t;
+        signal[i][0] = cos(2*M_PI * ( 0.5* beta * (signal[i][0]*signal[i][0]) + f0*signal[i][0]));
+        signal[i][1] = 0;
+    }
+//    FILE *fp = fopen("input.dat", "wb");
+//    fwrite(signal, sizeof(fftwf_complex), samples, fp);
+//    fclose(fp);
+}
+
+void MainWindow::on_comboBox_chans_currentIndexChanged(const QString &arg1)
+{
+    int chosen_srate = ui->comboBox_srate->currentText().toInt();
+    int chosen_chans = arg1.toInt();
+    ui->label_bufsize->setText(QString::number(((nblocks * nthreads * chosen_chans)/chosen_srate)*2));
+}
+
+void MainWindow::on_comboBox_srate_currentIndexChanged(const QString &arg1)
+{
+    int chosen_srate = arg1.toInt();
+    int chosen_chans = ui->comboBox_chans->currentText().toInt();
+    ui->label_bufsize->setText(QString::number(((nblocks * nthreads * chosen_chans)/chosen_srate)*2));
 }

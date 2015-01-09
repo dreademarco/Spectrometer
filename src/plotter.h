@@ -8,14 +8,15 @@
 #include <stdio.h>
 #include <sys/time.h>
 
-#include "circulararray2dspectrumthreaded.h"
+#include "fftwsequencecircularthreaded.h"
 #include "spectrogramplot.h"
 
 class Plotter : public QObject
 {
     Q_OBJECT
 public:
-    Plotter(CircularArray2DSpectrumThreaded<float> *sourceDataBlock = NULL, int chunkSize = 0, int integrationFactor = 1, SpectrogramPlot *spectrogramPlot = NULL, QObject *parent = 0);
+    Plotter(FFTWSequenceCircularThreaded *sourceDataBlock = NULL, SpectrogramPlot *spectrogramPlot = NULL, int selectedSpectSize = 64, int selectedChans = 256, int selectedFs = 1024, int selectedIntegFactor = 1, QObject *parent = 0);
+    ~Plotter();
 public slots:
     void start();
 
@@ -24,16 +25,23 @@ signals:
     void done();
 
 private:
-    CircularArray2DSpectrumThreaded<float> *sourceStream;
-    int chunkSize;
-    int integrationFactor;
-    SpectrogramData<float> *spectrogramData;
+    FFTWSequenceCircularThreaded *sourceStream;
+    int samplesToProcess;
+    int integrationfactor;    
+    int srate;
+    int spectSize;
+    int nchans;
+    int guiUpdateSize; // samples to process before GUI progress update
+    int samplesprocessed; //collect and process data from buffer at a different rate
+    SpectrogramData *spectrogramData;
     SpectrogramPlot *spectrogramPlot;
-    CircularArray2DSpectrum<float> *tempSamples;
+    FFTWSequenceCircular *tempSamples;
     int placements;
+    int prevPlacements;
     bool loop;
 
-    void fastLoadDataInSpectrogramMemCpy();
+    int fastLoadDataInSpectrogramMemCpy();
+    void doMagnitude();
 };
 
 #endif // PLOTTER_H

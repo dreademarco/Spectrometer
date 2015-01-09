@@ -3,62 +3,80 @@ using namespace std;
 
 
 //QObject *parent,
-Plotter::Plotter(CircularArray2DSpectrumThreaded<float> *sourceDataBlock, int chunkSize, int integrationFactor, SpectrogramPlot *spectrogramPlot, QObject *parent) : QObject(parent)
-{
+Plotter::Plotter(FFTWSequenceCircularThreaded *sourceDataBlock, SpectrogramPlot *spectrogramPlot, int selectedSpectSize, int selectedChans, int selectedFs, int selectedIntegFactor, QObject *parent) : QObject(parent)
+{    
+    this->integrationfactor = selectedIntegFactor;
+    this->srate = selectedFs;
+    this->nchans = selectedChans;
+    this->spectSize = selectedSpectSize;
+    this->guiUpdateSize = spectSize;
+    this->samplesprocessed = spectSize;
     this->sourceStream = sourceDataBlock;
-    this->chunkSize = chunkSize;
-    this->integrationFactor = integrationFactor;
+    this->samplesToProcess = samplesprocessed;
     this->spectrogramPlot = spectrogramPlot;
-    this->tempSamples = new CircularArray2DSpectrum<float>(freqBins,spectSize);
-    this->spectrogramData = new SpectrogramData<float>(tempSamples,freqBins,spectSize);
+    this->tempSamples = new FFTWSequenceCircular(nchans,spectSize);
+    this->spectrogramData = new SpectrogramData(tempSamples,nchans,spectSize);
     this->placements = 0;
     this->loop = true;
+    this->prevPlacements=-1;
+}
+
+Plotter::~Plotter()
+{
+    samplesToProcess = samplesprocessed;
+    delete spectrogramPlot;
+    //delete spectrogramData;
+    delete tempSamples;
+    placements=0;
+    prevPlacements=-1;
+    loop = false;
 }
 
 void Plotter::start()
 {
-    timeval t1, t2;
-    double elapsedTime;
-    // start timer
-    gettimeofday(&t1, NULL);
+    //omp_set_num_threads(1);
+
+    int nsamp = ((tobs * srate)/nchans)/integrationfactor;
 
     while(loop){
         // Step (1): Copy next available block to spectrogram data
-        fastLoadDataInSpectrogramMemCpy();
+        int processed = fastLoadDataInSpectrogramMemCpy();
+
+        prevPlacements = placements;
+        placements = placements + processed;
 
         // Step (2): Check if enough data has been put into spectogramData and signal if ready
-        if(placements % guiUpdateSize == 0){
-            spectrogramPlot->pushNewData(spectrogramData);            
-            emit readyForPlot();
+        if(prevPlacements!=placements){ //something was actually pulled from buffer
+            //if(placements % guiUpdateSize == 0){
+                doMagnitude();
+                spectrogramPlot->pushNewData(spectrogramData);
+                emit readyForPlot();
+            //}
         }
-        if(placements==samplesSize/integrationFactor){
+
+        if(placements>=nsamp){
             loop=false;
         }
-    }
-    // stop timer
-    gettimeofday(&t2, NULL);
-    // compute and print the elapsed time in millisec
-    elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;      // sec to ms
-    elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;   // us to ms
-    // print the elapsed time in millisec
-    cout << "Plotter elasped time: " << elapsedTime << " ms" << endl;
-    float totalSeconds = elapsedTime/1000.0;
-    if(totalSeconds>0){
-        float datarate = (((samplesSize*freqBins)/totalSeconds)/1000000);
-        cout << "Plotter Data rate est.: " << datarate << " Mhz" << endl;
-    }else{
-        cout << "Plotter Data rate est.: n/a"  << " Mhz" << endl;
     }
     emit done();
 }
 
-void Plotter::fastLoadDataInSpectrogramMemCpy(){
-    bool copyMade = false; //do not return from this function until a copy has been made to memory
+int Plotter::fastLoadDataInSpectrogramMemCpy(){
+    bool copyMade = false; //do not return from this function until a copy has been made to memory    
     while(!copyMade){
-        if(sourceStream->getNumUsedSpaces()>=(chunkSize/integrationFactor)){
-            spectrogramData->fastAddDataSectionMemCpy(sourceStream, chunkSize/integrationFactor);
-            placements = placements + (chunkSize/integrationFactor);
+        int currentUsed = sourceStream->getNumUsedSpaces();
+        if(currentUsed>=samplesToProcess){
+            spectrogramData->fastAddDataSectionMemCpy(sourceStream, samplesToProcess);
             copyMade = true;
+            return samplesToProcess;
+        }else if(currentUsed<samplesToProcess){
+            spectrogramData->fastAddDataSectionMemCpy(sourceStream, currentUsed);
+            copyMade = true;
+            return currentUsed;
         }
     }
+}
+
+void Plotter::doMagnitude(){
+    spectrogramData->dataArray->magnitude();
 }
