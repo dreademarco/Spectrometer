@@ -28,6 +28,12 @@ private slots:
 
     void on_comboBox_srate_currentIndexChanged(const QString &arg1);
 
+    void on_jetRadioButton_clicked();
+
+    void on_stdRadioButton_clicked();
+
+    void on_grayRadioButton_clicked();
+
 private:
     FFTWSequenceCircularThreaded *rawSourceDataBlock;
     FFTWSequenceCircularThreaded *pipelineSourceDataBlock;

@@ -3,7 +3,7 @@ using namespace std;
 
 SpectrogramData::SpectrogramData(FFTWSequenceCircular *data, int freq_bins,int samples) : QwtRasterData()
 {
-    highestIntensity = 100.0; //100.0
+    highestIntensity = 1.0; //100.0
     setInterval(Qt::XAxis, QwtInterval(0,samples-1));
     setInterval(Qt::YAxis, QwtInterval(0,freq_bins-1));
     setInterval(Qt::ZAxis, QwtInterval(0.0,highestIntensity));
@@ -18,7 +18,7 @@ void SpectrogramData::addData(fftwf_complex* sampleData){
     }
 }
 
-void SpectrogramData::fastAddDataSectionMemCpy(FFTWSequenceCircularThreaded *sourceDataBlock, int copySize){
+void SpectrogramData::fastAddDataSectionMemCpy(FFTWSequenceCircularThreaded *sourceDataBlock, int copySize){    
     sourceDataBlock->fastPopBlockSamples(this->dataArray,copySize);
     this->dataArray->incrementReadIndex(copySize);
 //    for (int i = 0; i < copySize; ++i) {

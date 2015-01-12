@@ -14,7 +14,6 @@ using namespace std;
 
 FFTWSequence::FFTWSequence(int channels, int samples)
 {
-    //this->id = QUuid::createUuid();
     this->channels = channels;
     this->samples = samples;
     data = (fftwf_complex*) fftwf_malloc(channels * samples * sizeof(fftwf_complex));
@@ -142,9 +141,9 @@ void FFTWSequence::loadMemCpy(FFTWSequence *sourceData){
 void FFTWSequence::toString(){
     for (int sampleIdx = 0; sampleIdx < this->getSampleCount(); ++sampleIdx) {
         for (int channelIdx = 0; channelIdx < this->getChannelCount(); ++channelIdx) {
-            cout << this->at(channelIdx,sampleIdx)[0] << " , " << this->at(channelIdx,sampleIdx)[1] << "\t";
+            cout << this->at(channelIdx,sampleIdx)[0][0] << " , " << this->at(channelIdx,sampleIdx)[0][1] << endl; //"\t";
         }
-        cout << endl;
+        //cout << endl;
     }
 }
 
@@ -172,7 +171,7 @@ void FFTWSequence::integration(int integrationFactor, FFTWSequence *output)
         // Loop over number of samples (integrated)
         #pragma omp parallel
         {
-            int threadId = omp_get_thread_num();
+            int threadId = omp_get_thread_num();            
             for (int s = threadId * globalSamples / nthreads;
                      s < (threadId + 1) * globalSamples / nthreads;
                      s++){
@@ -204,10 +203,14 @@ void FFTWSequence::integration(int integrationFactor, FFTWSequence *output)
         }
     }
     fftwf_free(meandivisor);
+//    this->toString();
+//    cout << "------------------" << endl;
+//    output->toString();
  }
 
-void FFTWSequence::magnitude()
+float FFTWSequence::magnitude()
 {
+    int highValue = 0;
     omp_set_num_threads(nthreads);
     int globalSamples = (int) (this->getSampleCount()*this->getChannelCount());
     #pragma omp parallel
@@ -218,7 +221,11 @@ void FFTWSequence::magnitude()
                  s++){
             data[s][0] = sqrt(data[s][0]*data[s][0] + data[s][1]*data[s][1]);
             data[s][1] = 0;
+            if(data[s][0]>highValue){
+                highValue = data[s][0];
+            }
             //cout << data[s][0] << endl;
         }
     }
+    return highValue;
 }

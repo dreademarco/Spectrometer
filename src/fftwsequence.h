@@ -39,7 +39,7 @@ public:
     FFTWSequence getChannelsSection(int channel_offset, int n_channels);
     void loadMemCpy(FFTWSequence *sourceData);
     void integration(int integrationFactor, FFTWSequence *output);
-    void magnitude();
+    float magnitude();
     void toString();
 
 private:

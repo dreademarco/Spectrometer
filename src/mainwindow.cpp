@@ -62,8 +62,8 @@ void MainWindow::on_startPushButton_clicked()
 
     //initialize raw dataBlock, and populate it
     rawSourceDataBlock = new FFTWSequenceCircularThreaded(1,nsamp);
-    generateLinearChirp(fs,tobs,0,tobs/2,200,rawSourceDataBlock->data);
-    //generateLinearChirp(srate, tobs, 0, tobs/4, 500, rawSourceDataBlock->data);
+    generateLinearChirp(fs,tobs,0,tobs/2,100,rawSourceDataBlock->data);
+    //generateLinearChirp(fs, tobs, 0, tobs/2, 500, rawSourceDataBlock->data);
     //generateLinearChirp(fs,duration,0,duration/4,700,chirpsignal);
     for (int i = 0; i < nsamp; ++i) {
         rawSourceDataBlock->increaseUsedSpaces();
@@ -88,7 +88,7 @@ void MainWindow::on_startPushButton_clicked()
     // threads start
     plotter->moveToThread(plotter_thread);
     pipeline->moveToThread(pipeline_thread);
-    //plotter_thread->start();
+    plotter_thread->start();
     pipeline_thread->start();
 }
 
@@ -120,4 +120,28 @@ void MainWindow::on_comboBox_srate_currentIndexChanged(const QString &arg1)
     int chosen_srate = arg1.toInt();
     int chosen_chans = ui->comboBox_chans->currentText().toInt();
     ui->label_bufsize->setText(QString::number(((nblocks * nthreads * chosen_chans)/chosen_srate)*2));
+}
+
+void MainWindow::on_jetRadioButton_clicked()
+{
+    ui->jetRadioButton->setChecked(true);
+    ui->stdRadioButton->setChecked(false);
+    ui->grayRadioButton->setChecked(false);
+    ui->plotWidget->setColorMap(CustomColorMap::JET);
+}
+
+void MainWindow::on_stdRadioButton_clicked()
+{
+    ui->jetRadioButton->setChecked(false);
+    ui->stdRadioButton->setChecked(true);
+    ui->grayRadioButton->setChecked(false);
+    ui->plotWidget->setColorMap(CustomColorMap::STANDARD);
+}
+
+void MainWindow::on_grayRadioButton_clicked()
+{
+    ui->jetRadioButton->setChecked(false);
+    ui->stdRadioButton->setChecked(false);
+    ui->grayRadioButton->setChecked(true);
+    ui->plotWidget->setColorMap(CustomColorMap::GRAY);
 }

@@ -19,12 +19,13 @@ Plotter::Plotter(FFTWSequenceCircularThreaded *sourceDataBlock, SpectrogramPlot 
     this->placements = 0;
     this->loop = true;
     this->prevPlacements=-1;
+    this->highIntensity = 0;
 }
 
 Plotter::~Plotter()
 {
     samplesToProcess = samplesprocessed;
-    delete spectrogramPlot;
+    //delete spectrogramPlot;
     //delete spectrogramData;
     delete tempSamples;
     placements=0;
@@ -48,9 +49,15 @@ void Plotter::start()
         // Step (2): Check if enough data has been put into spectogramData and signal if ready
         if(prevPlacements!=placements){ //something was actually pulled from buffer
             //if(placements % guiUpdateSize == 0){
-                doMagnitude();
+                float highestValue = doMagnitude();
                 spectrogramPlot->pushNewData(spectrogramData);
+                if(highestValue > highIntensity){
+                    highIntensity = highestValue;
+                    spectrogramData->setInterval(Qt::ZAxis, QwtInterval(0.0,highIntensity));
+                    spectrogramPlot->setupAxis();
+                }
                 emit readyForPlot();
+                usleep(0.05*1000000);
             //}
         }
 
@@ -77,6 +84,6 @@ int Plotter::fastLoadDataInSpectrogramMemCpy(){
     }
 }
 
-void Plotter::doMagnitude(){
-    spectrogramData->dataArray->magnitude();
+float Plotter::doMagnitude(){
+    return spectrogramData->dataArray->magnitude();
 }

@@ -21,6 +21,7 @@ public:
     SpectrogramPlot(QWidget * = NULL);
     void pushNewData(SpectrogramData *myData);
     void setupAxis();
+    void setColorMap(CustomColorMap::colormap selected_colormap);
     //explicit SpectrogramPlot(QObject *parent = 0);
 
 signals:
@@ -31,7 +32,9 @@ public Q_SLOTS:
 
 private:
     QwtPlotSpectrogram *mySpectrogramPlot;
+    CustomColorMap *myColorMap;
     bool initialSetup;
+    QwtScaleWidget *rightAxis;
 
 };
 

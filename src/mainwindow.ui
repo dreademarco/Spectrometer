@@ -11,7 +11,10 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>ISSA Spectrometer</string>
+  </property>
+  <property name="autoFillBackground">
+   <bool>false</bool>
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -264,6 +267,30 @@
         </property>
         <property name="text">
          <string>Start Plotter</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="3">
+       <widget class="QRadioButton" name="stdRadioButton">
+        <property name="text">
+         <string>Standard</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="4">
+       <widget class="QRadioButton" name="jetRadioButton">
+        <property name="text">
+         <string>Jet</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="5">
+       <widget class="QRadioButton" name="grayRadioButton">
+        <property name="text">
+         <string>Grayscale</string>
         </property>
        </widget>
       </item>

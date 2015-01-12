@@ -56,7 +56,7 @@ StreamingPPF::~StreamingPPF(){
 
 void StreamingPPF::applyPPF()
 {
-    // start up data input stream
+    // start up pre-tap data before rest of input stream
     loadFromInputStream();
 
     // Loop over input blocks of size nfft

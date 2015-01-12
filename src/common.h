@@ -20,6 +20,7 @@
 //#include <immintrin.h> //m256
 ////#include <zmmintrin.h> //m512
 #include <x86intrin.h>
+#include <unistd.h>
 
 extern QSemaphore freeSpace;
 extern QSemaphore usedSpace;

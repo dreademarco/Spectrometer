@@ -18,6 +18,9 @@ Pipeline::Pipeline(FFTWSequenceCircularThreaded *sourceDataBlock, FFTWSequenceCi
     this->prevPlacements = -1;
     this->loop = true;
     this->samplesToGather = srate*tobs_buffer;
+    this->tapSamples = (ntaps-1)*nchans;
+    //this->inputWorkspace = new FFTWSequence(sourceDataBlock->getChannelCount(),tapSamples+samplesToGather);
+
     this->inputWorkspace = new FFTWSequence(sourceDataBlock->getChannelCount(),samplesToGather);
     this->inputWorkspace2 = new FFTWSequence(sourceDataBlock->getChannelCount(),samplesToGather);
     this->outputWorkspace = new FFTWSequence(outputDataBlock->getChannelCount(),(samplesToGather/outputDataBlock->getChannelCount())/integrationFactor);
@@ -55,10 +58,10 @@ void Pipeline::start()
         int processed = fastLoadDataInWorkSpaceMemCpy();
 
         // Step (2): Apply PPF
-        //ppf->applyPPF();
+        ppf->applyPPF();
 
         // Step (3): Perform Integration and update count
-        //doIntegration();
+        doIntegration();
 
         int samples = (processed/nchans)/integrationFactor;
         prevPlacements = placements;
@@ -68,7 +71,7 @@ void Pipeline::start()
         //doMagnitude();
 
         // Step (5): Output results
-        //fastLoadDataToOutputStreamMemCpy(samples);
+        fastLoadDataToOutputStreamMemCpy(samples);
 
         if(placements==totalSamples){
             loop=false;

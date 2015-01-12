@@ -26,6 +26,7 @@ signals:
 
 private:
     FFTWSequenceCircularThreaded *sourceStream;
+    int highIntensity;
     int samplesToProcess;
     int integrationfactor;    
     int srate;
@@ -41,7 +42,7 @@ private:
     bool loop;
 
     int fastLoadDataInSpectrogramMemCpy();
-    void doMagnitude();
+    float doMagnitude();
 };
 
 #endif // PLOTTER_H

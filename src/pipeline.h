@@ -45,6 +45,7 @@ private:
     int prevPlacements;
     bool loop;
     int samplesToGather;
+    int tapSamples;
     void setupCPU();
 };
 

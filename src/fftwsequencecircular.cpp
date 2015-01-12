@@ -20,7 +20,7 @@ int FFTWSequenceCircular::getRefillCount(){
 }
 
 void FFTWSequenceCircular::incrementReadIndex(int length){
-    currentSampleReadIdx = (currentSampleReadIdx+length) % (this->getSampleCount()-1);
+    currentSampleReadIdx = (currentSampleReadIdx+length) % (this->getSampleCount());
 //    if(currentSampleReadIdx>=this->getSampleCount()-1){
 //        currentSampleReadIdx = 0;
 //    }else{
@@ -153,18 +153,21 @@ void FFTWSequenceCircular::pushSpectrumFast(int length, FFTWSequence *inputSecti
     int readLoc = 0;
     int toWrite = length;
 
+    fftwf_complex* output_array = this->data;
+    fftwf_complex* input_array = inputSection->data;
+
     while(toWrite>0){
         int cellWriteLoc = this->getCurrentSampleWriteIndex();
         int cellsWriteIdx = cellWriteLoc*cellsToCopy;
         int spaceAvailable = getSampleCount() - cellWriteLoc;
         if(toWrite<=spaceAvailable)
         {
-            memcpy(data[cellsWriteIdx],inputSection->data[readLoc],toWrite*cellsToCopy*sizeof(fftwf_complex));
+            memcpy(output_array+cellsWriteIdx,input_array+readLoc,toWrite*cellsToCopy*sizeof(fftwf_complex));
             incrementWriteIndex(toWrite);
             toWrite -= toWrite;
             readLoc += toWrite;
         }else{
-            memcpy(data[cellsWriteIdx],inputSection->data[readLoc],spaceAvailable*cellsToCopy*sizeof(fftwf_complex));
+            memcpy(output_array+cellsWriteIdx,input_array+readLoc,spaceAvailable*cellsToCopy*sizeof(fftwf_complex));
             incrementWriteIndex(spaceAvailable);
             toWrite -= spaceAvailable;
             readLoc += spaceAvailable;
