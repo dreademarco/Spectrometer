@@ -145,3 +145,10 @@ void MainWindow::on_grayRadioButton_clicked()
     ui->grayRadioButton->setChecked(true);
     ui->plotWidget->setColorMap(CustomColorMap::GRAY);
 }
+
+void MainWindow::on_stopPushButton_clicked()
+{
+    plotter_thread->exit();
+    pipeline_thread->exit();
+    ui->startPushButton->setEnabled(true);
+}

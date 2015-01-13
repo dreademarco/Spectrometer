@@ -25,7 +25,7 @@ Plotter::Plotter(FFTWSequenceCircularThreaded *sourceDataBlock, SpectrogramPlot 
 Plotter::~Plotter()
 {
     samplesToProcess = samplesprocessed;
-    //delete spectrogramPlot;
+    delete spectrogramPlot;
     //delete spectrogramData;
     delete tempSamples;
     placements=0;

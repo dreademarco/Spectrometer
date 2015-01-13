@@ -34,6 +34,8 @@ private slots:
 
     void on_grayRadioButton_clicked();
 
+    void on_stopPushButton_clicked();
+
 private:
     FFTWSequenceCircularThreaded *rawSourceDataBlock;
     FFTWSequenceCircularThreaded *pipelineSourceDataBlock;
@@ -55,8 +57,6 @@ private:
 
 public slots:
     void spectrogramPlotUpdate();
-    void terminatePlotter();
-    void terminatePipeline();
 };
 
 #endif // MAINWINDOW_H
