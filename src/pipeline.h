@@ -21,6 +21,7 @@ public:
     void fastLoadDataToOutputStreamMemCpy(int samplesToPush);
     void doIntegration();
     void doMagnitude();
+    void setupTermination();
 
 public slots:
     void start();

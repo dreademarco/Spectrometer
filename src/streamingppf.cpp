@@ -82,19 +82,19 @@ void StreamingPPF::applyPPF()
             // Loop over ntaps
             for(int t = 0; t < n_taps; t++)
             {
-                __m256* pSrc2   = (__m256*) fifo_ptrs[t];
-                __m256* pResult = (__m256*) fftw_in_threaded[threadID * n_fft * n_blocks];// + b;
+                __m128* pSrc2   = (__m128*) fifo_ptrs[t];
+                __m128* pResult = (__m128*) fftw_in_threaded[threadID * n_fft * n_blocks];// + b;
 
                 for(int j = 0; j < n_blocks; j++)
                 {
-                    __m256* pSrc1   = (__m256*) (filterCoeffs + t * n_fft * 2); //coeffs are repeated for real and complex parts
+                    __m128* pSrc1   = (__m128*) (filterCoeffs + t * n_fft * 2); //coeffs are repeated for real and complex parts
 
                 // Loop over samples
                     for(int s = 0; s < n_fft; s += sse_factor)
                     {
                        // Apply taps
-                        __m256 m1 = _mm256_mul_ps(*pSrc1, *pSrc2);
-                        *pResult  = _mm256_add_ps(*pResult, m1);
+                        __m128 m1 = _mm_mul_ps(*pSrc1, *pSrc2);
+                        *pResult  = _mm_add_ps(*pResult, m1);
 
                         pSrc1++;   // Update coeffs pointer
                         pSrc2++;   // Update fifo pointer

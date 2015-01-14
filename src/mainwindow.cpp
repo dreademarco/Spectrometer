@@ -148,7 +148,9 @@ void MainWindow::on_grayRadioButton_clicked()
 
 void MainWindow::on_stopPushButton_clicked()
 {
-    plotter_thread->exit();
-    pipeline_thread->exit();
+    pipeline->setupTermination();
+    plotter->setupTermination();
+//    plotter_thread->exit();
+//    pipeline_thread->exit();
     ui->startPushButton->setEnabled(true);
 }

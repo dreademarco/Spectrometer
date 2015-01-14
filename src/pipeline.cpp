@@ -37,6 +37,10 @@ Pipeline::~Pipeline()
     prevPlacements = -1;
 }
 
+void Pipeline::setupTermination(){
+    loop=false;
+}
+
 void Pipeline::setupCPU(){
     // Set number of openmp threads
     omp_set_dynamic(0);

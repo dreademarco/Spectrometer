@@ -2,7 +2,7 @@
 #define MYCONSTANTS_H
 
 // CPU CONFIG
-const int sse_factor = 4;
+const int sse_factor = 2;
 const int nthreads = 1;
 
 // OPTIMIZATION CONFIG

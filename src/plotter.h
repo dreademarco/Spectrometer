@@ -19,6 +19,7 @@ public:
     ~Plotter();
 public slots:
     void start();
+    void setupTermination();
 
 signals:
     void readyForPlot();

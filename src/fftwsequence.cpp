@@ -180,23 +180,23 @@ void FFTWSequence::integration(int integrationFactor, FFTWSequence *output)
                     {
                         // Loop over number of samples
                         int offset = (chans * (s * integrationFactor + i));
-                        __m256* inSrc  = (__m256*) input_array[offset];
-                        __m256* outSrc = (__m256*) output_array[s * chans];
+                        __m128* inSrc  = (__m128*) input_array[offset];
+                        __m128* outSrc = (__m128*) output_array[s * chans];
 
                         for (int c=0; c < chans; c += sse_factor)
                         {
-                            *outSrc  = _mm256_add_ps(*outSrc, *inSrc);
+                            *outSrc  = _mm_add_ps(*outSrc, *inSrc);
                             inSrc++;   // Update input pointer
                             outSrc++;   // Update output pointer
                         }
                     }
 
                     //Compute mean
-                    __m256* outSrc = (__m256*) output_array[s * chans];
-                    __m256* divisorSrc = (__m256*) meandivisor;
+                    __m128* outSrc = (__m128*) output_array[s * chans];
+                    __m128* divisorSrc = (__m128*) meandivisor;
                     for (int c=0; c < chans; c += sse_factor)
                     {
-                        *outSrc = _mm256_mul_ps(*outSrc,*divisorSrc);
+                        *outSrc = _mm_mul_ps(*outSrc,*divisorSrc);
                         outSrc++;
                     }
                 }

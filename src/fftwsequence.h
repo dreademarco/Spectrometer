@@ -42,6 +42,7 @@ public:
     float magnitude();
     void toString();
 
+
 private:
     //QUuid id;
     int channels;

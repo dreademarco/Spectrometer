@@ -33,6 +33,10 @@ Plotter::~Plotter()
     loop = false;
 }
 
+void Plotter::setupTermination(){
+    loop=false;
+}
+
 void Plotter::start()
 {
     //omp_set_num_threads(1);
