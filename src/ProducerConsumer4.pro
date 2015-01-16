@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core network gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -24,7 +24,9 @@ SOURCES += main.cpp\
     streamingppf.cpp \
     fftwsequence.cpp \
     fftwsequencecircular.cpp \
-    fftwsequencecircularthreaded.cpp
+    fftwsequencecircularthreaded.cpp \
+    DoubleBuffer.cpp \
+    PacketChunker.cpp
 
 HEADERS  += mainwindow.h \
     colormap.h \
@@ -40,7 +42,9 @@ HEADERS  += mainwindow.h \
     streamingppf.h \
     fftwsequence.h \
     fftwsequencecircular.h \
-    fftwsequencecircularthreaded.h
+    fftwsequencecircularthreaded.h \
+    DoubleBuffer.h \
+    PacketChunker.h
 
 FORMS    += mainwindow.ui
 
