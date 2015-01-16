@@ -2,7 +2,7 @@
 using namespace std;
 
 //Pipeline::Pipeline(CircularArray2DSpectrumThreaded<float> *sourceDataBlock, CircularArray2DSpectrumThreaded<float> *outputDataBlock, int chunkSize, int integrationFactor) : QThread(parent)
-Pipeline::Pipeline(FFTWSequenceCircularThreaded *sourceDataBlock, FFTWSequenceCircularThreaded *outputDataBlock, int blockSize, int selectedIntegrationFactor, int selectedTaps, int selectedChans, int selectedFs, int selectedBufferTobs, QObject *parent) : QObject(parent){
+Pipeline::Pipeline(FFTWSequenceCircularThreaded *sourceDataBlock, FFTWSequenceCircularThreaded *outputDataBlock, int blockSize, int selectedIntegrationFactor, int selectedTaps, int selectedChans, int selectedFs, int selectedBufferTobs, int selectedPort, int selectedSamplesPerPacket, QObject *parent) : QObject(parent){
     // detect CPU architecture and decide on SSE factor
     setupCPU();
 
@@ -19,12 +19,15 @@ Pipeline::Pipeline(FFTWSequenceCircularThreaded *sourceDataBlock, FFTWSequenceCi
     this->loop = true;
     this->samplesToGather = srate*tobs_buffer;
     this->tapSamples = (ntaps-1)*nchans;
+    this->numberOfAntennas = 1;
+    this->port = selectedPort;
+    this->samplesPerPacket = selectedSamplesPerPacket;
     //this->inputWorkspace = new FFTWSequence(sourceDataBlock->getChannelCount(),tapSamples+samplesToGather);
 
     this->inputWorkspace = new FFTWSequence(sourceDataBlock->getChannelCount(),samplesToGather);
     this->inputWorkspace2 = new FFTWSequence(sourceDataBlock->getChannelCount(),samplesToGather);
     this->outputWorkspace = new FFTWSequence(outputDataBlock->getChannelCount(),(samplesToGather/outputDataBlock->getChannelCount())/integrationFactor);
-    this->ppf = new StreamingPPF(inputWorkspace,inputWorkspace2,ntaps,nchans,nblocks,srate,tobs_buffer,StreamingPPF::HANN);
+    this->ppf = new StreamingPPF(inputWorkspace,inputWorkspace2,ntaps,nchans,nblocks,srate,tobs_buffer,StreamingPPF::HANN);    
 }
 
 Pipeline::~Pipeline()
@@ -54,10 +57,24 @@ void Pipeline::start()
     int nsamp = tobs * srate;
     int totalSamples = (nsamp/nchans)/integrationFactor;
 
+    // Initialise Circular Buffer and set thread priority
+    DoubleBuffer doubleBuffer(numberOfAntennas, nchans, nsamp);
+    doubleBuffer.start();
+    doubleBuffer.setPriority(QThread::TimeCriticalPriority);
+
+    // Initialise UDP Chunker and set thread priority
+    PacketChunker chunker(port, numberOfAntennas, nchans, samplesPerPacket, nchans);
+    chunker.setDoubleBuffer(&doubleBuffer);
+    chunker.start();
+    chunker.setPriority(QThread::TimeCriticalPriority);
+
     timeval t1, t2;
     double elapsedTime;
     gettimeofday(&t1, NULL);
     while(loop){
+        // read raw bytes from DAQ
+        //unsigned char *udpBuffer = doubleBuffer.prepareRead(&timestamp, &sampRate);
+
         // Step (1): Copy next available block to inputWorkspace
         int processed = fastLoadDataInWorkSpaceMemCpy();
 

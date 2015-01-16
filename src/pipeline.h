@@ -15,7 +15,7 @@ class Pipeline : public QObject
 {
     Q_OBJECT
 public:
-    Pipeline(FFTWSequenceCircularThreaded *sourceDataBlock = NULL, FFTWSequenceCircularThreaded *outputDataBlock = NULL, int blockSize = 0, int selectedIntegrationFactor = 1, int selectedTaps = 4, int selectedChans=256, int selectedFs = 1024, int selectedBufferTobs=1, QObject *parent = 0);
+    Pipeline(FFTWSequenceCircularThreaded *sourceDataBlock = NULL, FFTWSequenceCircularThreaded *outputDataBlock = NULL, int blockSize = 0, int selectedIntegrationFactor = 1, int selectedTaps = 4, int selectedChans=256, int selectedFs = 1024, int selectedBufferTobs=1, int selectedPort=10000, int selectedSamplesPerPacket = 64, QObject *parent = 0);
     ~Pipeline();
     int fastLoadDataInWorkSpaceMemCpy();
     void fastLoadDataToOutputStreamMemCpy(int samplesToPush);
@@ -47,6 +47,9 @@ private:
     bool loop;
     int samplesToGather;
     int tapSamples;
+    int numberOfAntennas;
+    int port;
+    int samplesPerPacket;
     void setupCPU();
 };
 

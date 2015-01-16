@@ -20,6 +20,7 @@
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QRadioButton>
+#include <QtWidgets/QSpinBox>
 #include <QtWidgets/QTabWidget>
 #include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
@@ -52,6 +53,10 @@ public:
     QRadioButton *jetRadioButton;
     QRadioButton *grayRadioButton;
     QPushButton *stopPushButton;
+    QLabel *label_8;
+    QLabel *label_9;
+    QComboBox *comboBox_samplesperpacket;
+    QSpinBox *spinBox_port;
     QTabWidget *tabWidget;
     QWidget *tab;
     QGridLayout *gridLayout;
@@ -62,7 +67,7 @@ public:
     {
         if (MainWindow->objectName().isEmpty())
             MainWindow->setObjectName(QStringLiteral("MainWindow"));
-        MainWindow->resize(743, 443);
+        MainWindow->resize(748, 443);
         MainWindow->setAutoFillBackground(false);
         centralWidget = new QWidget(MainWindow);
         centralWidget->setObjectName(QStringLiteral("centralWidget"));
@@ -170,6 +175,26 @@ public:
 
         gridLayout_2->addWidget(stopPushButton, 3, 1, 1, 1);
 
+        label_8 = new QLabel(centralWidget);
+        label_8->setObjectName(QStringLiteral("label_8"));
+
+        gridLayout_2->addWidget(label_8, 2, 0, 1, 1);
+
+        label_9 = new QLabel(centralWidget);
+        label_9->setObjectName(QStringLiteral("label_9"));
+
+        gridLayout_2->addWidget(label_9, 2, 2, 1, 1);
+
+        comboBox_samplesperpacket = new QComboBox(centralWidget);
+        comboBox_samplesperpacket->setObjectName(QStringLiteral("comboBox_samplesperpacket"));
+
+        gridLayout_2->addWidget(comboBox_samplesperpacket, 2, 3, 1, 1);
+
+        spinBox_port = new QSpinBox(centralWidget);
+        spinBox_port->setObjectName(QStringLiteral("spinBox_port"));
+
+        gridLayout_2->addWidget(spinBox_port, 2, 1, 1, 1);
+
 
         verticalLayout->addLayout(gridLayout_2);
 
@@ -208,7 +233,9 @@ public:
         MainWindow->setCentralWidget(centralWidget);
 
         retranslateUi(MainWindow);
+        QObject::connect(spinBox_port, SIGNAL(editingFinished()), comboBox_spectSamples, SLOT(clear()));
 
+        comboBox_samplesperpacket->setCurrentIndex(1);
         tabWidget->setCurrentIndex(0);
 
 
@@ -281,6 +308,16 @@ public:
         jetRadioButton->setText(QApplication::translate("MainWindow", "Jet", 0));
         grayRadioButton->setText(QApplication::translate("MainWindow", "Grayscale", 0));
         stopPushButton->setText(QApplication::translate("MainWindow", "Stop Plotter", 0));
+        label_8->setText(QApplication::translate("MainWindow", "Port", 0));
+        label_9->setText(QApplication::translate("MainWindow", "Samples / Packet", 0));
+        comboBox_samplesperpacket->clear();
+        comboBox_samplesperpacket->insertItems(0, QStringList()
+         << QApplication::translate("MainWindow", "32", 0)
+         << QApplication::translate("MainWindow", "64", 0)
+         << QApplication::translate("MainWindow", "128", 0)
+         << QApplication::translate("MainWindow", "256", 0)
+         << QApplication::translate("MainWindow", "512", 0)
+        );
         tabWidget->setTabText(tabWidget->indexOf(tab), QApplication::translate("MainWindow", "Spectrogram", 0));
         tabWidget->setTabText(tabWidget->indexOf(tab_2), QApplication::translate("MainWindow", "Bandpass", 0));
     } // retranslateUi

@@ -41,5 +41,8 @@ void CustomColorMap::initColorMap(){
         pos = 1.0/13.0*12.0; addColorStop(pos, QColor(255,66,0));
         pos = 1.0/13.0*13.0; addColorStop(pos, QColor(189,0,0));
         break;
+    case YELLOW:
+        setColorInterval(Qt::black, Qt::yellow);
+        break;
     }
 }

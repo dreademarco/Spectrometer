@@ -38,6 +38,8 @@ private slots:
 
     void on_stopPushButton_clicked();
 
+    void on_yellowRadioButton_clicked();
+
 private:
     FFTWSequenceCircularThreaded *rawSourceDataBlock;
     FFTWSequenceCircularThreaded *pipelineSourceDataBlock;
@@ -56,6 +58,8 @@ private:
     int buf_factor;
     int bufsize;
     int spectsize;
+    int port;
+    int samplesPerPacket;
 
 public slots:
     void spectrogramPlotUpdate();

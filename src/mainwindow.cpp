@@ -49,6 +49,8 @@ void MainWindow::on_startPushButton_clicked()
     // disable the start button
     ui->startPushButton->setEnabled(false);
 
+    port = ui->spinBox_port->text().toInt();
+    samplesPerPacket = ui->comboBox_samplesperpacket->currentText().toInt();
     integFactor = ui->comboBox_integrationFactor->currentText().toInt();
     ppftaps = ui->comboBox_taps->currentText().toInt();
     chans = ui->comboBox_chans->currentText().toInt();
@@ -73,7 +75,7 @@ void MainWindow::on_startPushButton_clicked()
     pipelineSourceDataBlock = new FFTWSequenceCircularThreaded(chans,(nsamp/integFactor)/chans);
 
     // make pipeline thread
-    pipeline = new Pipeline(rawSourceDataBlock, pipelineSourceDataBlock, nblocks, integFactor, ppftaps, chans, fs, buf_factor*bufsize);
+    pipeline = new Pipeline(rawSourceDataBlock, pipelineSourceDataBlock, nblocks, integFactor, ppftaps, chans, fs, buf_factor*bufsize, port, samplesPerPacket);
     connect(pipeline_thread, SIGNAL(started()), pipeline, SLOT(start()));
 
     // make plotter thread
@@ -127,6 +129,7 @@ void MainWindow::on_jetRadioButton_clicked()
     ui->jetRadioButton->setChecked(true);
     ui->stdRadioButton->setChecked(false);
     ui->grayRadioButton->setChecked(false);
+    //ui->yellowRadioButton->setChecked(false);
     ui->plotWidget->setColorMap(CustomColorMap::JET);
 }
 
@@ -135,6 +138,7 @@ void MainWindow::on_stdRadioButton_clicked()
     ui->jetRadioButton->setChecked(false);
     ui->stdRadioButton->setChecked(true);
     ui->grayRadioButton->setChecked(false);
+    //ui->yellowRadioButton->setChecked(false);
     ui->plotWidget->setColorMap(CustomColorMap::STANDARD);
 }
 
@@ -143,14 +147,22 @@ void MainWindow::on_grayRadioButton_clicked()
     ui->jetRadioButton->setChecked(false);
     ui->stdRadioButton->setChecked(false);
     ui->grayRadioButton->setChecked(true);
+    //ui->yellowRadioButton->setChecked(false);
     ui->plotWidget->setColorMap(CustomColorMap::GRAY);
 }
 
 void MainWindow::on_stopPushButton_clicked()
 {
-    pipeline->setupTermination();
     plotter->setupTermination();
-//    plotter_thread->exit();
-//    pipeline_thread->exit();
+    pipeline->setupTermination();
     ui->startPushButton->setEnabled(true);
+}
+
+void MainWindow::on_yellowRadioButton_clicked()
+{
+    ui->jetRadioButton->setChecked(false);
+    ui->stdRadioButton->setChecked(false);
+    ui->grayRadioButton->setChecked(false);
+    //ui->yellowRadioButton->setChecked(true);
+    ui->plotWidget->setColorMap(CustomColorMap::YELLOW);
 }

@@ -6,7 +6,7 @@
 class CustomColorMap : public QwtLinearColorMap
 {
 public:
-    enum colormap{STANDARD, GRAY, JET};
+    enum colormap{STANDARD, GRAY, JET, YELLOW};
     CustomColorMap();
     CustomColorMap(colormap);
 private:
