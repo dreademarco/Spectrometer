@@ -8,17 +8,17 @@
 
 #include "common.h"
 #include "stdio.h"
-#include "fftwsequencecircularthreaded.h"
-#include "streamingppf.h"
+#include "fftwsequencebuffer.h"
+#include "ppf.h"
 
 class Pipeline : public QObject
 {
     Q_OBJECT
 public:
-    Pipeline(FFTWSequenceCircularThreaded *sourceDataBlock = NULL, FFTWSequenceCircularThreaded *outputDataBlock = NULL, int blockSize = 0, int selectedIntegrationFactor = 1, int selectedTaps = 4, int selectedChans=256, int selectedFs = 1024, int selectedBufferTobs=1, int selectedPort=10000, int selectedSamplesPerPacket = 64, QObject *parent = 0);
+    Pipeline(FFTWSequenceBuffer *outputDataBlock = NULL, int blockSize = 0, int selectedIntegrationFactor = 1, int selectedTaps = 4, int selectedChans=256, int selectedFs = 1024, int selectedBufferSize=1, int selectedPort=10000, int selectedSamplesPerPacket = 64, QObject *parent = 0);
     ~Pipeline();
-    int fastLoadDataInWorkSpaceMemCpy();
-    void fastLoadDataToOutputStreamMemCpy(int samplesToPush);
+    //int fastLoadDataInWorkSpaceMemCpy();
+    void fastLoadDataToOutputStreamMemCpy();
     void doIntegration();
     void doMagnitude();
     void setupTermination();
@@ -30,9 +30,8 @@ signals:
     void done();
 
 private:        
-    StreamingPPF *ppf;
-    FFTWSequenceCircularThreaded *sourceStream;
-    FFTWSequenceCircularThreaded *outputStream;
+    PPF *ppf;
+    FFTWSequenceBuffer *outputStream;
     int blocks;
     FFTWSequence *inputWorkspace;
     FFTWSequence *inputWorkspace2;
@@ -51,6 +50,8 @@ private:
     int port;
     int samplesPerPacket;
     void setupCPU();
+
+    double timestamp, sampRate;
 };
 
 #endif // PIPELINE_H

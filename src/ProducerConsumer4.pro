@@ -23,10 +23,10 @@ SOURCES += main.cpp\
     framedatacomplex.cpp \
     streamingppf.cpp \
     fftwsequence.cpp \
-    fftwsequencecircular.cpp \
-    fftwsequencecircularthreaded.cpp \
     DoubleBuffer.cpp \
-    PacketChunker.cpp
+    PacketChunker.cpp \
+    fftwsequencebuffer.cpp \
+    ppf.cpp
 
 HEADERS  += mainwindow.h \
     colormap.h \
@@ -41,10 +41,10 @@ HEADERS  += mainwindow.h \
     framedatacomplex.h \
     streamingppf.h \
     fftwsequence.h \
-    fftwsequencecircular.h \
-    fftwsequencecircularthreaded.h \
     DoubleBuffer.h \
-    PacketChunker.h
+    PacketChunker.h \
+    fftwsequencebuffer.h \
+    ppf.h
 
 FORMS    += mainwindow.ui
 
@@ -57,5 +57,5 @@ QMAKE_LFLAGS +=  -fopenmp -march=native
 INCLUDEPATH += /usr/local/qwt-6.1.1/include #Added this
 LIBS += -L/usr/local/qwt-6.1.1/lib -lqwt #Added this
 
+#LIBS += -lm -lfftw3f -lfftw3f_omp -lsndfile
 LIBS += -lm -lfftw3f -lfftw3f_omp
-#LIBS += -lm -lfftw3 -lfftw3_omp

@@ -1,14 +1,13 @@
 #include "streamingppf.h"
 
-StreamingPPF::StreamingPPF(FFTWSequence* inputStreamBuffer, FFTWSequence* outputStreamBuffer, int filter_taps, int fft_points, int blocks, int sampling_rate, int duration_seconds, window selected_window)
+StreamingPPF::StreamingPPF(FFTWSequence* inputStreamBuffer, FFTWSequence* outputStreamBuffer, int filter_taps, int fft_points, int blocks, int sampling_rate, int duration_samples, window selected_window)
 {
     // configure PPF settings
     fs = sampling_rate;
-    duration = duration_seconds;
+    n_samp = duration_samples;
     n_blocks = blocks;
     n_taps = filter_taps;
     n_fft = fft_points;
-    n_samp = sampling_rate*duration_seconds;
     n_coefficients = n_taps*n_fft;
     m_window = selected_window;
 
@@ -115,10 +114,14 @@ void StreamingPPF::loadFromInputStream(){
     int totalInputBufferSize = n_samp + tapSize;
 
     //first copy tap data
-    memcpy(inputBuffer, inputBuffer + totalInputBufferSize - tapSize, (n_taps - 1) * n_fft * sizeof(fftwf_complex));
-    //memcpy(inputBuffer, inputBuffer + (n_samp - ((n_taps - 1) * n_fft)), (n_taps - 1) * n_fft * sizeof(fftwf_complex));
+    memcpy(inputBuffer, inputBuffer + totalInputBufferSize - tapSize, (n_taps - 1) * n_fft * sizeof(fftwf_complex));    
     // then copy in new data
     memcpy(inputBuffer + ((n_taps - 1) * n_fft), sourceStream, n_samp * sizeof(fftwf_complex));
+    for (int i = 0; i < n_samp; ++i) {
+        if(sourceStream[i][0]!=0){
+            cout << sourceStream[i][0] << endl;
+        }
+    }
 }
 
 void StreamingPPF::copyToOutputStream(){

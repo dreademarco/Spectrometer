@@ -3,13 +3,16 @@
 
 // CPU CONFIG
 const int sse_factor = 2;
-const int nthreads = 1;
+const int nthreads = 2;
 
 // OPTIMIZATION CONFIG
 const int nblocks = 16;
 
+//ANTENNA CONFIG
+const int nantennas = 32;
+
 // general global variables
-const int tobs = 8000;
+const int tobs = 270;
 //const int tobs = 8;
 
 //const int integrationfactor = 1;

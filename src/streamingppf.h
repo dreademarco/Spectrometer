@@ -21,7 +21,7 @@ class StreamingPPF
 {
 public:
     enum window{HAMMING, HANN};
-    StreamingPPF(FFTWSequence* inputStreamBuffer, FFTWSequence* outputStreamBuffer, int filter_taps = 4, int fft_points = 256, int blocks=1, int sampling_rate=1024, int duration_seconds=10, window selected_window = StreamingPPF::HAMMING);
+    StreamingPPF(FFTWSequence* inputStreamBuffer, FFTWSequence* outputStreamBuffer, int filter_taps = 4, int fft_points = 256, int blocks=1, int sampling_rate=1024, int duration_samples=10, window selected_window = StreamingPPF::HAMMING);
     ~StreamingPPF();
     void applyPPF();
 

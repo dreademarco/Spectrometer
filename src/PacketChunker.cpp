@@ -169,27 +169,31 @@ void PacketChunker::run()
         // Get UDP packet contents
         unsigned char *data = (unsigned char *) (((char *) udp_header) + sizeof(udphdr));
 
+//        for(int j = 0; j < PACKET_DATA_LEN; j++){
+//            cout << float(data[PACKET_HEADER_LEN + j]) << endl;
+//        }
+
         // Process SPEAD packet
         // {
-         uint64_t hdr;
+//         uint64_t hdr;
 
 
-        hdr = SPEAD_HEADER(data);
+//        hdr = SPEAD_HEADER(data);
 
-        if ((SPEAD_GET_MAGIC(hdr) != SPEAD_MAGIC) ||
-                (SPEAD_GET_VERSION(hdr) != SPEAD_VERSION) ||
-                (SPEAD_GET_ITEMSIZE(hdr) != SPEAD_ITEM_PTR_WIDTH) ||
-                (SPEAD_GET_ADDRSIZE(hdr) != SPEAD_HEAP_ADDR_WIDTH))
-                        continue;
+//        if ((SPEAD_GET_MAGIC(hdr) != SPEAD_MAGIC) ||
+//                (SPEAD_GET_VERSION(hdr) != SPEAD_VERSION) ||
+//                (SPEAD_GET_ITEMSIZE(hdr) != SPEAD_ITEM_PTR_WIDTH) ||
+//                (SPEAD_GET_ADDRSIZE(hdr) != SPEAD_HEAP_ADDR_WIDTH))
+//                        continue;
 
-        unsigned nItems = SPEAD_GET_NITEMS(hdr);
-        unsigned char *payload = data + SPEAD_HEADERLEN + nItems * SPEAD_ITEMLEN;
+//        unsigned nItems = SPEAD_GET_NITEMS(hdr);
+//        unsigned char *payload = data + SPEAD_HEADERLEN + nItems * SPEAD_ITEMLEN;
 
         // }
 
 
 
-        long unsigned data_header =  be64toh(((uint64_t *) data)[0]);
+        long unsigned data_header = be64toh(((uint64_t *) data)[0]);
         unsigned long  time       = data_header >> 26;
         unsigned short channel    = (data_header >> 16) & 0x03FF;
         
@@ -245,8 +249,7 @@ void PacketChunker::run()
             if (_numPackets == _npackets)
             {
                 // Mark heap as finished
-                _heap =  _buffer -> writeHeap(1397631261.500001 + (1024 * _currTime) / (40e6/2.0/128.0),
-                                              1 / 19531.25);
+                _heap =  _buffer -> writeHeap(1397631261.500001 + (1024 * _currTime) / (40e6/2.0/128.0), 1 / 19531.25);
                 _currTime = 0;
                 _numPackets = 0;
             }

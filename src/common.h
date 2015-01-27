@@ -22,10 +22,12 @@
 #include <x86intrin.h>
 #include <unistd.h>
 
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "DoubleBuffer.h"
 #include "PacketChunker.h"
+#include "fftwsequence.h"
 
-//extern QSemaphore freeSpace;
-//extern QSemaphore usedSpace;
 
 #endif // COMMON_H

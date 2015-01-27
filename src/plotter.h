@@ -8,14 +8,15 @@
 #include <stdio.h>
 #include <sys/time.h>
 
-#include "fftwsequencecircularthreaded.h"
+#include "fftwsequencebuffer.h"
 #include "spectrogramplot.h"
 
 class Plotter : public QObject
 {
     Q_OBJECT
 public:
-    Plotter(FFTWSequenceCircularThreaded *sourceDataBlock = NULL, SpectrogramPlot *spectrogramPlot = NULL, int selectedSpectSize = 64, int selectedChans = 256, int selectedFs = 1024, int selectedIntegFactor = 1, QObject *parent = 0);
+    //Plotter(FFTWSequenceCircularThreaded *sourceDataBlock = NULL, SpectrogramPlot *spectrogramPlot = NULL, int selectedSpectSize = 64, int selectedChans = 256, int selectedFs = 1024, int selectedIntegFactor = 1, QObject *parent = 0);
+    Plotter(FFTWSequenceBuffer *sourceDataBlock = NULL, SpectrogramPlot *spectrogramPlot = NULL, int selectedSpectSize = 64, int selectedChans = 256, QObject *parent = 0);
     ~Plotter();
 public slots:
     void start();
@@ -26,23 +27,19 @@ signals:
     void done();
 
 private:
-    FFTWSequenceCircularThreaded *sourceStream;
+    FFTWSequenceBuffer *sourceStream;
     int highIntensity;
-    int samplesToProcess;
     int integrationfactor;    
-    int srate;
     int spectSize;
     int nchans;
     int guiUpdateSize; // samples to process before GUI progress update
-    int samplesprocessed; //collect and process data from buffer at a different rate
     SpectrogramData *spectrogramData;
     SpectrogramPlot *spectrogramPlot;
-    FFTWSequenceCircular *tempSamples;
-    int placements;
-    int prevPlacements;
+    FFTWSequence *tempSamples;
     bool loop;
 
-    int fastLoadDataInSpectrogramMemCpy();
+    void loadDataInSpectrogram();
+    //int fastLoadDataInSpectrogramMemCpy();
     float doMagnitude();
 };
 

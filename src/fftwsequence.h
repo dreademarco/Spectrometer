@@ -35,16 +35,15 @@ public:
     fftwf_complex* getSamplesForChannel(int channelIdx);
     void setSample(int sampleIdx, fftwf_complex* channelData);
     void setChannel(int channelIdx, fftwf_complex* sampleData);
-    FFTWSequence getSamplesSection(int sample_offset, int n_samples);
-    FFTWSequence getChannelsSection(int channel_offset, int n_channels);
-    void loadMemCpy(FFTWSequence *sourceData);
+    //FFTWSequence getSamplesSection(int sample_offset, int n_samples);
+    //FFTWSequence getChannelsSection(int channel_offset, int n_channels);
+    //void loadMemCpy(FFTWSequence *sourceData);
     void integration(int integrationFactor, FFTWSequence *output);
     float magnitude();
-    void toString();
+    //void toString();
 
 
 private:
-    //QUuid id;
     int channels;
     int samples;
     fftwf_complex* temp_channeldata;

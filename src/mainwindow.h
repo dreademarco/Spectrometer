@@ -4,7 +4,7 @@
 #include "spectrogramplot.h"
 #include "common.h"
 #include "fftwsequence.h"
-#include "fftwsequencecircularthreaded.h"
+#include "fftwsequencebuffer.h"
 #include "pipeline.h"
 #include "plotter.h"
 #include <QMainWindow>
@@ -26,10 +26,6 @@ public:
 private slots:
     void on_startPushButton_clicked();
 
-    void on_comboBox_chans_currentIndexChanged(const QString &arg1);
-
-    void on_comboBox_srate_currentIndexChanged(const QString &arg1);
-
     void on_jetRadioButton_clicked();
 
     void on_stdRadioButton_clicked();
@@ -40,9 +36,15 @@ private slots:
 
     void on_yellowRadioButton_clicked();
 
+    void on_comboBox_bufferFactor_currentIndexChanged(const QString &arg1);
+
+    void on_comboBox_plotFactor_currentTextChanged(const QString &arg1);
+
+    void on_comboBox_integrationFactor_currentIndexChanged(const QString &arg1);
+
 private:
-    FFTWSequenceCircularThreaded *rawSourceDataBlock;
-    FFTWSequenceCircularThreaded *pipelineSourceDataBlock;
+    //FFTWSequenceCircularThreaded *pipelineSourceDataBlock;
+    FFTWSequenceBuffer *pipelineSourceDataBlock;
     Ui::MainWindow *ui;
     QThread *pipeline_thread;
     QThread *plotter_thread;
@@ -57,9 +59,10 @@ private:
     int fs;
     int buf_factor;
     int bufsize;
-    int spectsize;
     int port;
     int samplesPerPacket;
+    int plotSize;
+    int plotBufferSections;
 
 public slots:
     void spectrogramPlotUpdate();

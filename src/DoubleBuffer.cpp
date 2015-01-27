@@ -5,6 +5,7 @@
 #include "string.h"
 #include "time.h"
 #include "sys/time.h"
+#include "common.h"
 
 #define SWAP(x,y) unsigned t; t=x; x=y; y=t;
 #define HEAP_BUFFERS 8
@@ -104,7 +105,7 @@ unsigned char *DoubleBuffer::writeHeap(double timestamp, double blockrate)
 void DoubleBuffer::run()
 {
     // Temporary working buffer for local heap re-organisation
-    unsigned char *local_heap = (unsigned char *) malloc(_nantennas * _heapNsamp * sizeof(unsigned char));
+ //   unsigned char *local_heap = (unsigned char *) malloc(_nantennas * _heapNsamp * sizeof(unsigned char));
 
     // Infinite loop which read heap data from network thread and write it to buffer
     unsigned counter = 0;
@@ -115,8 +116,9 @@ void DoubleBuffer::run()
             sleep(BUSY_WAIT);
 
         // Wait for heap data to become available
-        while (_writerHeap == _readerHeap)
+        while (_writerHeap == _readerHeap){
             sleep(BUSY_WAIT);
+        }
 
         // Reader has advanced one buffer, we can start writing current buffer
 
@@ -128,12 +130,11 @@ void DoubleBuffer::run()
 
         for(unsigned c = 0; c < _heapChans; c++)
         {    
-            // Write re-organised channel to double buffer
-            memcpy(&_buffer[_writerBuffer][c * _nsamp * _nantennas + _samplesBuffered * _nantennas],
-                   local_heap, _nantennas * _heapNsamp * sizeof(unsigned char));
-
             memcpy(_buffer[_writerBuffer] + c * _nsamp * _nantennas + _samplesBuffered * _nantennas,
                    _heapBuffers[_writerHeap] + c * _nantennas * _heapNsamp, _nantennas * _heapNsamp * sizeof(unsigned char));
+
+         //   for(int j = 0; j < 1024; j++){
+         //       printf("%d\n", (int) (unsigned char)_buffer[_writerBuffer][j * _nsamp * _nantennas + _samplesBuffered * _nantennas]);
        }
 
         // Increment sample count
@@ -142,6 +143,18 @@ void DoubleBuffer::run()
         // Dealing with a new heap, check if buffer is already full
         if (_samplesBuffered == _nsamp)
         {
+
+//            // TEMP: Heap is ready... dump to disk
+//            if (counter > 1)
+//            {
+//                FILE *fp = fopen("heap_dump.dat", "wb");
+//                fwrite(_buffer[_writerBuffer], sizeof(unsigned char), _nsamp * _nantennas * _heapChans, fp);
+//                fclose(fp);
+//                printf("Written buffer to disk\n");
+//                sleep(60);
+//                exit(0);
+//            }
+
             // Check if reading buffer has been read
             while(_fullBuffers == 1)
                 sleep(BUSY_WAIT);

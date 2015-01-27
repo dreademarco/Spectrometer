@@ -2,32 +2,37 @@
 using namespace std;
 
 //Pipeline::Pipeline(CircularArray2DSpectrumThreaded<float> *sourceDataBlock, CircularArray2DSpectrumThreaded<float> *outputDataBlock, int chunkSize, int integrationFactor) : QThread(parent)
-Pipeline::Pipeline(FFTWSequenceCircularThreaded *sourceDataBlock, FFTWSequenceCircularThreaded *outputDataBlock, int blockSize, int selectedIntegrationFactor, int selectedTaps, int selectedChans, int selectedFs, int selectedBufferTobs, int selectedPort, int selectedSamplesPerPacket, QObject *parent) : QObject(parent){
+Pipeline::Pipeline(FFTWSequenceBuffer *outputDataBlock, int blockSize, int selectedIntegrationFactor, int selectedTaps, int selectedChans, int selectedFs, int selectedBufferSize, int selectedPort, int selectedSamplesPerPacket, QObject *parent) : QObject(parent){
     // detect CPU architecture and decide on SSE factor
     setupCPU();
 
-    this->tobs_buffer = selectedBufferTobs;
+    this->tobs_buffer = selectedBufferSize;
     this->srate = selectedFs;
     this->ntaps = selectedTaps;
     this->nchans = selectedChans;
-    this->sourceStream = sourceDataBlock;
     this->outputStream = outputDataBlock;
     this->blocks = blockSize;
     this->integrationFactor = selectedIntegrationFactor;
     this->placements = 0;
     this->prevPlacements = -1;
     this->loop = true;
-    this->samplesToGather = srate*tobs_buffer;
-    this->tapSamples = (ntaps-1)*nchans;
-    this->numberOfAntennas = 1;
+    this->numberOfAntennas = nantennas; //remove later (reset to 1)
+    this->samplesToGather = tobs_buffer;//*numberOfAntennas;
+    this->tapSamples = (ntaps-1)*nchans;    
     this->port = selectedPort;
     this->samplesPerPacket = selectedSamplesPerPacket;
     //this->inputWorkspace = new FFTWSequence(sourceDataBlock->getChannelCount(),tapSamples+samplesToGather);
 
-    this->inputWorkspace = new FFTWSequence(sourceDataBlock->getChannelCount(),samplesToGather);
-    this->inputWorkspace2 = new FFTWSequence(sourceDataBlock->getChannelCount(),samplesToGather);
-    this->outputWorkspace = new FFTWSequence(outputDataBlock->getChannelCount(),(samplesToGather/outputDataBlock->getChannelCount())/integrationFactor);
-    this->ppf = new StreamingPPF(inputWorkspace,inputWorkspace2,ntaps,nchans,nblocks,srate,tobs_buffer,StreamingPPF::HANN);    
+    //this->inputWorkspace = new FFTWSequence(sourceDataBlock->getChannelCount(),samplesToGather);
+    this->inputWorkspace = new FFTWSequence(nchans,samplesToGather);
+    //this->inputWorkspace2 = new FFTWSequence(sourceDataBlock->getChannelCount(),samplesToGather);
+    this->inputWorkspace2 = new FFTWSequence(nchans,samplesToGather);
+    //this->outputWorkspace = new FFTWSequence(outputDataBlock->getChannelCount(),(samplesToGather/outputDataBlock->getChannelCount())/integrationFactor);
+    //this->outputWorkspace = new FFTWSequence(nchans,(samplesToGather/nchans)/integrationFactor);
+    this->outputWorkspace = new FFTWSequence(nchans,samplesToGather/integrationFactor);
+    //this->ppf = new StreamingPPF(inputWorkspace,inputWorkspace2,ntaps,nchans,nblocks,srate,tobs_buffer,StreamingPPF::HANN);
+    //this->ppf = new StreamingPPF(inputWorkspace,inputWorkspace2,ntaps,nchans,nblocks,srate,tobs_buffer,StreamingPPF::HANN);
+    this->ppf = new PPF(inputWorkspace, inputWorkspace2, ntaps, nchans, PPF::HANN);
 }
 
 Pipeline::~Pipeline()
@@ -53,93 +58,69 @@ void Pipeline::setupCPU(){
 void Pipeline::start()
 {
     omp_set_num_threads(nthreads);
-    //cout << omp_get_max_threads() << endl;
-    int nsamp = tobs * srate;
-    int totalSamples = (nsamp/nchans)/integrationFactor;
 
     // Initialise Circular Buffer and set thread priority
-    DoubleBuffer doubleBuffer(numberOfAntennas, nchans, nsamp);
-    doubleBuffer.start();
-    doubleBuffer.setPriority(QThread::TimeCriticalPriority);
+//    int circ_buffer_nsamp = samplesToGather/numberOfAntennas;
+//    DoubleBuffer doubleBuffer(numberOfAntennas, nchans, circ_buffer_nsamp);
+//    doubleBuffer.start();
+//    doubleBuffer.setPriority(QThread::TimeCriticalPriority);
 
-    // Initialise UDP Chunker and set thread priority
-    PacketChunker chunker(port, numberOfAntennas, nchans, samplesPerPacket, nchans);
-    chunker.setDoubleBuffer(&doubleBuffer);
-    chunker.start();
-    chunker.setPriority(QThread::TimeCriticalPriority);
+//    // Initialise UDP Chunker and set thread priority
+//    PacketChunker chunker(port, numberOfAntennas, nchans, samplesPerPacket, nchans);
+//    chunker.setDoubleBuffer(&doubleBuffer);
+//    chunker.start();
+//    chunker.setPriority(QThread::TimeCriticalPriority);
 
-    timeval t1, t2;
-    double elapsedTime;
-    gettimeofday(&t1, NULL);
-    while(loop){
-        // read raw bytes from DAQ
+    int samplesToPlot = samplesToGather/integrationFactor;
+
+    while(true){
+        // Get pointer to next buffer
         //unsigned char *udpBuffer = doubleBuffer.prepareRead(&timestamp, &sampRate);
 
-        // Step (1): Copy next available block to inputWorkspace
-        int processed = fastLoadDataInWorkSpaceMemCpy();
+//        // Copy UDP data to buffer - NAIVE - IMPROVE THIS SHIT OR DIE
+//        for(int j = 0; j < samplesToGather * nchans; j++)
+//        {
+//            unsigned char value = udpBuffer[j];
+//            float value_f = (float) value;
+//            inputWorkspace->data[j][0] = value_f;
+//            inputWorkspace->data[j][1] = value_f;
+//        }
 
-        // Step (2): Apply PPF
+        // Sample data
+        for (int c = 0; c < nchans; ++c) {
+            for (int s = 0; s < samplesToGather; ++s) {
+                inputWorkspace->data[(c*samplesToGather)+s][0] = c;
+            }
+        }
+
+        // Copy UDP data to buffer
+        //memcpy(inputWorkspace->data, udpBuffer, numberOfAntennas * nchans * samplesToGather * sizeof(unsigned char));
+
+        // Done reading from buffer
+        //doubleBuffer.readReady();
+
+        //Pipeline
+        // Step (1): Apply PPF
         ppf->applyPPF();
+        //memcpy(inputWorkspace2->data,inputWorkspace->data,samplesToGather * nchans * sizeof(fftwf_complex));
 
-        // Step (3): Perform Integration and update count
+        // Step (2): Perform integration
         doIntegration();
+        //memcpy(outputWorkspace->data,inputWorkspace2->data,samplesToGather * nchans * sizeof(fftwf_complex));
 
-        int samples = (processed/nchans)/integrationFactor;
-        prevPlacements = placements;
-        placements = placements + samples;
-
-        // Step (4): Calculate magnitude spectrum
-        //doMagnitude();
-
-        // Step (5): Output results
-        fastLoadDataToOutputStreamMemCpy(samples);
-
-        if(placements==totalSamples){
-            loop=false;
-        }
-    }
-
-    gettimeofday(&t2, NULL);
-    // compute and print the elapsed time in millisec
-    elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;      // sec to ms
-    elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;   // us to ms
-    cout << "Pipeline elasped time: " << elapsedTime << " ms" << endl;
-    if(elapsedTime>0){
-        float datarate = ((((nsamp)/elapsedTime)/1000000))*1000.0;
-        cout << "Pipeline Data rate est.: " << datarate << " Mhz" << endl;
-        cout << "Finished with " << placements << " samples plotted" << endl;
-    }else{
-        cout << "Pipeline Data rate est.: n/a"  << " Mhz" << endl;
-    }
-    emit done();
-}
-
-int Pipeline::fastLoadDataInWorkSpaceMemCpy(){
-    bool copyMade = false; //do not return from this function until a copy has been made to memory
-    while(!copyMade){
-        int currentUsed = sourceStream->getNumUsedSpaces();
-        if(currentUsed>=samplesToGather){
-            sourceStream->fastPopBlockSamples(inputWorkspace,samplesToGather);
-            copyMade = true;
-            return samplesToGather;
-        }
-        else if(currentUsed<samplesToGather){
-            sourceStream->fastPopBlockSamples(inputWorkspace,currentUsed);
-            copyMade = true;
-            return currentUsed;
-        }
+        // Step (3): Output results
+        fastLoadDataToOutputStreamMemCpy();
     }
 }
 
 void Pipeline::doIntegration(){
-    inputWorkspace2->integration(integrationFactor,outputWorkspace);
-    //inputWorkspace->integration(integrationFactor,outputWorkspace); //use when ppf is bypassed
+    inputWorkspace2->integration(integrationFactor,outputWorkspace);    
 }
 
 void Pipeline::doMagnitude(){
     outputWorkspace->magnitude();
 }
 
-void Pipeline::fastLoadDataToOutputStreamMemCpy(int samplesToPush){
-    outputStream->fastPushBlockSamples(outputWorkspace,samplesToPush);
+void Pipeline::fastLoadDataToOutputStreamMemCpy(){
+    outputStream->addSection(outputWorkspace);
 }
