@@ -71,8 +71,6 @@ void Pipeline::start()
 //    chunker.start();
 //    chunker.setPriority(QThread::TimeCriticalPriority);
 
-    int samplesToPlot = samplesToGather/integrationFactor;
-
     while(true){
         // Get pointer to next buffer
         //unsigned char *udpBuffer = doubleBuffer.prepareRead(&timestamp, &sampRate);

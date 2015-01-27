@@ -7,6 +7,7 @@ const int nthreads = 2;
 
 // OPTIMIZATION CONFIG
 const int nblocks = 16;
+const int minPossibleBufferValues=1024;
 
 //ANTENNA CONFIG
 const int nantennas = 32;

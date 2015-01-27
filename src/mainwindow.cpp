@@ -15,7 +15,7 @@ MainWindow::MainWindow(QWidget *parent) :
     plotter_thread = new QThread; // Second thread
 
     //int minPossibleBufferValues = nblocks * nthreads * nantennas;
-    int minPossibleBufferValues = nblocks * nantennas;
+    //int minPossibleBufferValues = nblocks * nantennas;
     int factorSize = ui->comboBox_bufferFactor->currentText().toInt();
     ui->label_bufsize->setText(QString::number(minPossibleBufferValues*factorSize));
     ui->label_samplesperpacket->setText(QString::number((minPossibleBufferValues*factorSize)/nantennas));
@@ -69,12 +69,11 @@ void MainWindow::on_startPushButton_clicked()
     fs = ui->comboBox_srate->currentText().toInt();
     buf_factor = ui->comboBox_bufferFactor->currentText().toInt();
     bufsize = ui->label_bufsize->text().toInt();
-    plotSize = ui->label_plotbuffersamples->text().toInt();
+    //plotSize = ui->label_plotbuffersamples->text().toInt();
     plotBufferSections = ui->comboBox_plotFactor->currentText().toInt();
 
     //initialize pipeline datablock    
-    //pipelineSourceDataBlock = new FFTWSequenceCircularThreaded(chans,bufsize/integFactor);
-    pipelineSourceDataBlock = new FFTWSequenceBuffer(chans,plotSize,plotBufferSections);
+    pipelineSourceDataBlock = new FFTWSequenceBuffer(chans,bufsize,plotBufferSections);
 
     // make pipeline thread
     pipeline = new Pipeline(pipelineSourceDataBlock, nblocks, integFactor, ppftaps, chans, fs, bufsize, port, samplesPerPacket);
@@ -82,6 +81,7 @@ void MainWindow::on_startPushButton_clicked()
 
     // make plotter thread
     plotter = new Plotter(pipelineSourceDataBlock,ui->plotWidget,bufsize/integFactor,chans);
+    //plotter = new Plotter(pipelineSourceDataBlock,ui->plotWidget,plotSize,chans);
     connect(plotter_thread, SIGNAL(started()), plotter, SLOT(start()));
 
     // connect signal/slot for SpectrogramPlot
@@ -152,26 +152,30 @@ void MainWindow::on_yellowRadioButton_clicked()
 
 void MainWindow::on_comboBox_bufferFactor_currentIndexChanged(const QString &arg1)
 {   
-    int minPossibleBufferValues = nblocks * nthreads * nantennas;
+    //int minPossibleBufferValues = nblocks * nthreads * nantennas;
     int factorSize = ui->comboBox_bufferFactor->currentText().toInt();
     ui->label_bufsize->setText(QString::number(minPossibleBufferValues*factorSize));
     ui->label_samplesperpacket->setText(QString::number((minPossibleBufferValues*factorSize)/nantennas));    
     int integrationFactor = ui->comboBox_integrationFactor->currentText().toInt();
-    ui->label_plotbuffersamples->setText(QString::number((minPossibleBufferValues/integrationFactor)*factorSize));
+    //ui->label_plotbuffersamples->setText(QString::number((minPossibleBufferValues/integrationFactor)*factorSize));
+    //ui->label_plotbuffersamples->setText(QString::number((minPossibleBufferValues/integrationFactor)));
 }
 
 void MainWindow::on_comboBox_plotFactor_currentTextChanged(const QString &arg1)
 {
-    int minPossibleBufferValues = nblocks * nthreads * nantennas;
-    int factorSize = ui->comboBox_bufferFactor->currentText().toInt();    
+    //int minPossibleBufferValues = nblocks * nthreads * nantennas;
+    //int factorSize = ui->comboBox_bufferFactor->currentText().toInt();
+    //int factorSize = ui->comboBox_plotFactor->currentText().toInt();
     int integrationFactor = ui->comboBox_integrationFactor->currentText().toInt();
-    ui->label_plotbuffersamples->setText(QString::number((minPossibleBufferValues/integrationFactor)*factorSize));
+    //ui->label_plotbuffersamples->setText(QString::number((minPossibleBufferValues/integrationFactor)*factorSize));
+    ui->label_plotbuffersamples->setText(QString::number((minPossibleBufferValues/integrationFactor)));
 }
 
 void MainWindow::on_comboBox_integrationFactor_currentIndexChanged(const QString &arg1)
 {
-    int minPossibleBufferValues = nblocks * nthreads * nantennas;
+    //int minPossibleBufferValues = nblocks * nthreads * nantennas;
     int factorSize = ui->comboBox_bufferFactor->currentText().toInt();
     int integrationFactor = ui->comboBox_integrationFactor->currentText().toInt();
-    ui->label_plotbuffersamples->setText(QString::number((minPossibleBufferValues/integrationFactor)*factorSize));
+    //ui->label_plotbuffersamples->setText(QString::number((minPossibleBufferValues/integrationFactor)*factorSize));
+    ui->label_plotbuffersamples->setText(QString::number((minPossibleBufferValues/integrationFactor)));
 }

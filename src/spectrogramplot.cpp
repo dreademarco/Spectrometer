@@ -51,7 +51,6 @@ void SpectrogramPlot::showSpectrogram(bool on)
 void SpectrogramPlot::setAlpha(int alpha)
 {
     mySpectrogramPlot->setAlpha(alpha);
-    //replot();
 }
 
 void SpectrogramPlot::setupAxis(){
