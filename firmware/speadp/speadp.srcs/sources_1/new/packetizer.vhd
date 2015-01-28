@@ -124,6 +124,8 @@ begin
                     current_state <= payload;
                 elsif (current_state = payload and state_number = x"FF") then
                     current_state <= eof;
+                elsif (current_state = eof) then
+                    current_state <= idle;
 		        end if;
 		    else
 		        current_state <= idle;
