@@ -59,6 +59,9 @@ signal payload_s : std_logic_vector (64 - 1 downto 0);
 signal state_number : std_logic_vector (8 - 1 downto 0);
 signal state_reset  : std_logic := '1';
 
+signal idle_number : std_logic_vector (8 - 1 downto 0);
+signal idle_reset  : std_logic := '1';
+
 begin
 
     -- data generator according to switch
@@ -98,6 +101,15 @@ begin
         end if;
     end process;
 
+    -- idle delay counter
+    delay_counter : entity work.counter 
+    Generic Map ( count_size => 8 )
+    Port Map (
+        clk      => clk,
+        ce       => ce,
+        reset    => idle_reset,
+        data_out => idle_number);
+
     -- state number counter
     state_counter : entity work.counter 
     Generic Map ( count_size => 8 )
@@ -114,7 +126,7 @@ begin
 		    if (ce = '1') then
 		        -- since each state is only 1 clock cycle long
 		        -- we can change the state with just a flip-flop
-		        if (current_state = idle) then
+		        if (current_state = idle and idle_number = x"FF") then
 		            current_state <= header;
 		        elsif (current_state = header) then
 		            current_state <= heap_id;
@@ -145,6 +157,7 @@ begin
 				valid_s     <= '0';
 				-- reset states
 				state_reset <= '1';
+				idle_reset  <= '0';
 			when header  =>
 			    -- send out spead header
 				data_s      <= packet_header;
@@ -154,7 +167,7 @@ begin
                 valid_s     <= '1';
 				-- no need to count for now
 				state_reset <= '1';
-				
+				idle_reset  <= '1';
 				-- increment the heap number to indicate a new part of the heap
                 heap_number <= heap_number + 1;
 			when heap_id =>		
@@ -166,6 +179,7 @@ begin
                 valid_s     <= '1';
 			    -- no need to count for now
 			    state_reset <= '1';
+			    idle_reset  <= '1';
 		    when pay_len  =>
 		        -- output the size of the payload
                 data_s   <= x"0000000000000101"; -- make dynamic at some point in time 
@@ -175,6 +189,7 @@ begin
                 valid_s     <= '1';
                 -- remove reset from state couter
                 state_reset <= '0';
+                idle_reset  <= '1';
 			when payload =>
 			    -- output actual data
 				data_s   <= data_s;
@@ -184,6 +199,7 @@ begin
                 valid_s     <= '1';
 				-- remove reset from state couter
                 state_reset <= '0';
+                idle_reset  <= '1';
 		    when eof =>
 		        -- no data to output
 		        data_s   <= (OTHERS => '0');
@@ -193,6 +209,7 @@ begin
                 valid_s     <= '1';
                 -- no need to count for now
                 state_reset <= '1';
+                idle_reset  <= '0';
 		end case;
 	end process;
 
