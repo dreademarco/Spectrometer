@@ -17,8 +17,8 @@ DoubleBuffer::DoubleBuffer(unsigned nantennas, unsigned nchans, unsigned nsamp)
 {
     // Initialise buffers
     _buffer    =  (unsigned char **) malloc(2 * sizeof(unsigned char*));
-    _buffer[0] =  (unsigned char *) malloc(nantennas * nsamp * nchans * sizeof(unsigned char));
-    _buffer[1] =  (unsigned char *) malloc(nantennas * nsamp * nchans * sizeof(unsigned char));
+    _buffer[0] =  (unsigned char *) malloc(nantennas * nsamp * nchans * sizeof(unsigned char) * 2);
+    _buffer[1] =  (unsigned char *) malloc(nantennas * nsamp * nchans * sizeof(unsigned char) * 2);
 
     _readerBuffer = _samplesBuffered = _fullBuffers = 0;
     _writerHeap = _readerHeap = 0;
@@ -40,7 +40,7 @@ unsigned char *DoubleBuffer::setHeapParameters(unsigned heapNchans, unsigned hea
     // Allocate heap buffers
     _heapBuffers = (unsigned char **) malloc(HEAP_BUFFERS * sizeof(unsigned char *));
     for(unsigned i = 0; i < HEAP_BUFFERS; i++)
-        _heapBuffers[i] = (unsigned char *) malloc(_nantennas * heapNchans * heapNsamp * sizeof(unsigned char));
+        _heapBuffers[i] = (unsigned char *) malloc(_nantennas * heapNchans * heapNsamp * sizeof(unsigned char) * 2);
 
     // Initialise heap variables
     _readerHeap = 0;
@@ -131,7 +131,7 @@ void DoubleBuffer::run()
         for(unsigned c = 0; c < _heapChans; c++)
         {    
             memcpy(_buffer[_writerBuffer] + c * _nsamp * _nantennas + _samplesBuffered * _nantennas,
-                   _heapBuffers[_writerHeap] + c * _nantennas * _heapNsamp, _nantennas * _heapNsamp * sizeof(unsigned char));
+                   _heapBuffers[_writerHeap] + c * _nantennas * _heapNsamp, _nantennas * _heapNsamp * sizeof(unsigned char) * 2);
 
          //   for(int j = 0; j < 1024; j++){
          //       printf("%d\n", (int) (unsigned char)_buffer[_writerBuffer][j * _nsamp * _nantennas + _samplesBuffered * _nantennas]);

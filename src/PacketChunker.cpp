@@ -27,7 +27,8 @@ PacketChunker::PacketChunker(unsigned port, unsigned nAntennas, unsigned nSubban
 {   
     // Set configuration options
     _startTime = _startBlockid = 0;
-    _heapSize  = nAntennas * nSubbands * nSpectra * sizeof(char);
+    //_heapSize  = nAntennas * nSubbands * nSpectra * sizeof(char);
+    _heapSize  = nSubbands * nSpectra * sizeof(char) * 2;
 
     // Initialise chunker
     connectDevice();
@@ -69,7 +70,7 @@ void PacketChunker::connectDevice()
     address.sll_pkttype  = 0;
     address.sll_halen    = 0; 
 
-    // bind socket to eth3
+    // bind socket to eth2
     if(bind(_socket, (struct sockaddr *) &address, sizeof(struct sockaddr_ll)) < 0)
     {
         perror("bind()");
@@ -79,11 +80,19 @@ void PacketChunker::connectDevice()
     // Get page size (in bytes) to calculate tpacket_req parameters
     long page_size = sysconf(_SC_PAGESIZE);
 
+//    // Set up PACKET_MMAP capturing mode (hard-coded values for now)
+//    struct tpacket_req req;
+//    req.tp_block_size = page_size * 17;         // Hard-coded to be exactly divisible by frame size
+//    req.tp_block_nr   = 1024;
+//    req.tp_frame_size = PACKET_DATA_LEN + 256;  // Hard-coded for our needs, and is a divisor of pagesize()
+//    req.tp_frame_nr   = req.tp_block_nr * req.tp_block_size / req.tp_frame_size;
+//    _nframes          = req.tp_frame_nr;
+
     // Set up PACKET_MMAP capturing mode (hard-coded values for now)
     struct tpacket_req req;
-    req.tp_block_size = page_size * 17;         // Hard-coded to be exactly divisible by frame size
+    req.tp_block_size = page_size * 1; // page_size = 4096
     req.tp_block_nr   = 1024;
-    req.tp_frame_size = PACKET_DATA_LEN + 256;  // Hard-coded for our needs, and is a divisor of pagesize()
+    req.tp_frame_size = PACKET_DATA_LEN; // 4096
     req.tp_frame_nr   = req.tp_block_nr * req.tp_block_size / req.tp_frame_size;
     _nframes          = req.tp_frame_nr;
 

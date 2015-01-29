@@ -192,47 +192,6 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="4">
-       <widget class="QLabel" name="label_7">
-        <property name="text">
-         <string>Buffer Size Factor</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="5">
-       <widget class="QComboBox" name="comboBox_bufferFactor">
-        <item>
-         <property name="text">
-          <string>1</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>2</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>4</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>8</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>16</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>32</string>
-         </property>
-        </item>
-       </widget>
-      </item>
       <item row="0" column="4">
        <widget class="QLabel" name="label_6">
         <property name="text">
@@ -245,51 +204,6 @@
         <property name="text">
          <string>1</string>
         </property>
-       </widget>
-      </item>
-      <item row="3" column="4">
-       <widget class="QLabel" name="label_11">
-        <property name="text">
-         <string>Plot Buffer Factor</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="4">
-       <widget class="QLabel" name="label_12">
-        <property name="text">
-         <string>Plot Samples</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="5">
-       <widget class="QLabel" name="label_plotbuffersamples">
-        <property name="text">
-         <string>1</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="5">
-       <widget class="QComboBox" name="comboBox_plotFactor">
-        <item>
-         <property name="text">
-          <string>1</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>2</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>4</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>8</string>
-         </property>
-        </item>
        </widget>
       </item>
       <item row="1" column="0">
@@ -336,6 +250,58 @@
           <string>64</string>
          </property>
         </item>
+       </widget>
+      </item>
+      <item row="1" column="4">
+       <widget class="QLabel" name="label_12">
+        <property name="text">
+         <string>Plot Samples</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="5">
+       <widget class="QLabel" name="label_plotbuffersamples">
+        <property name="text">
+         <string>1</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="4">
+       <widget class="QLabel" name="label_11">
+        <property name="text">
+         <string>Plot Buffer Factor</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="5">
+       <widget class="QComboBox" name="comboBox_plotFactor">
+        <item>
+         <property name="text">
+          <string>1</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>2</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>4</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>8</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="3" column="2">
+       <widget class="QPushButton" name="terminate_pushButton">
+        <property name="text">
+         <string>Terminate (Unsafe)</string>
+        </property>
        </widget>
       </item>
      </layout>

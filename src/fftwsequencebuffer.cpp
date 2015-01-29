@@ -19,6 +19,13 @@ FFTWSequenceBuffer::~FFTWSequenceBuffer()
     fftwf_free(data);
 }
 
+void FFTWSequenceBuffer::flush(){
+    int totalSpace = channels * samplesPerSection * totalSections;
+    memset(data, 0, totalSpace * sizeof(fftwf_complex));
+    sectionWriteIdx = 0;
+    sectionReadIdx = totalSections;
+}
+
 void FFTWSequenceBuffer::addSection(FFTWSequence *input){
     mutex.lock();
         if(sectionWriteIdx==totalSections){

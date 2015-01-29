@@ -12,6 +12,7 @@ public:
     fftwf_complex* data;
     void addSection(FFTWSequence *input);
     void popSection(FFTWSequence *output);
+    void flush();
 
 private:
     int sectionWriteIdx;

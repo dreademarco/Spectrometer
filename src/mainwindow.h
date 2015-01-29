@@ -36,11 +36,11 @@ private slots:
 
     void on_yellowRadioButton_clicked();
 
-    void on_comboBox_bufferFactor_currentIndexChanged(const QString &arg1);
-
     void on_comboBox_plotFactor_currentTextChanged(const QString &arg1);
 
     void on_comboBox_integrationFactor_currentIndexChanged(const QString &arg1);
+
+    void on_terminate_pushButton_clicked();
 
 private:
     //FFTWSequenceCircularThreaded *pipelineSourceDataBlock;
@@ -63,6 +63,9 @@ private:
     int samplesPerPacket;
     int plotSize;
     int plotBufferSections;
+
+    //flow control
+    bool firstrun;
 
 public slots:
     void spectrogramPlotUpdate();

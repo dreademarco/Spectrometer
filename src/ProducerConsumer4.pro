@@ -21,7 +21,6 @@ SOURCES += main.cpp\
     plotter.cpp \
     framedata.cpp \
     framedatacomplex.cpp \
-    streamingppf.cpp \
     fftwsequence.cpp \
     DoubleBuffer.cpp \
     PacketChunker.cpp \
@@ -39,7 +38,6 @@ HEADERS  += mainwindow.h \
     plotter.h \
     framedata.h \
     framedatacomplex.h \
-    streamingppf.h \
     fftwsequence.h \
     DoubleBuffer.h \
     PacketChunker.h \

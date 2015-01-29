@@ -18,9 +18,13 @@ public:
     //Plotter(FFTWSequenceCircularThreaded *sourceDataBlock = NULL, SpectrogramPlot *spectrogramPlot = NULL, int selectedSpectSize = 64, int selectedChans = 256, int selectedFs = 1024, int selectedIntegFactor = 1, QObject *parent = 0);
     Plotter(FFTWSequenceBuffer *sourceDataBlock = NULL, SpectrogramPlot *spectrogramPlot = NULL, int selectedSpectSize = 64, int selectedChans = 256, QObject *parent = 0);
     ~Plotter();
+    bool flowFinished;
+
 public slots:
     void start();
     void setupTermination();
+    void halt();
+    void resume();
 
 signals:
     void readyForPlot();
@@ -37,6 +41,7 @@ private:
     SpectrogramPlot *spectrogramPlot;
     FFTWSequence *tempSamples;
     bool loop;
+    bool pause;
 
     void loadDataInSpectrogram();
     //int fastLoadDataInSpectrogramMemCpy();

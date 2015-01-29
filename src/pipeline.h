@@ -22,6 +22,9 @@ public:
     void doIntegration();
     void doMagnitude();
     void setupTermination();
+    void halt();
+    void resume();
+    bool flowFinished;
 
 public slots:
     void start();
@@ -44,14 +47,19 @@ private:
     int placements;
     int prevPlacements;
     bool loop;
+    bool pause;
     int samplesToGather;
     int tapSamples;
     int numberOfAntennas;
     int port;
     int samplesPerPacket;
+    int packetsPerHeap;
     void setupCPU();
 
     double timestamp, sampRate;
+
+    DoubleBuffer *doubleBuffer;
+    PacketChunker *chunker;
 };
 
 #endif // PIPELINE_H
