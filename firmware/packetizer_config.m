@@ -56,9 +56,17 @@ function packetizer_config(this_block)
 
   % (!) Custimize the following generic settings as appropriate. If any settings depend
   %      on input types, make the settings in the "inputTypesKnown" code block.
-  %      The addGeneric function takes  3 parameters, generic name, type and constant value.
+  %      The addGeneric function takes  3 parameters, generic name, type and constant value
   %      Supported types are boolean, real, integer and string.
-  this_block.addGeneric('count_sw','STD_LOGIC','''1''');
+%   myname = this_block.blockName; %This is the name of the black box block
+%   bb_mask = get_param(myname,'Parent'); %This is the name of the black box subsystem
+%   count_sw = str2num(get_param(bb_mask,'count_sw')); %Grab the 'amber time' parameter from the parent's mask
+%   
+%   if(count_sw)
+      this_block.addGeneric('count_sw','STD_LOGIC','''1''');
+%   else
+%       this_block.addGeneric('count_sw','STD_LOGIC','''0''');
+%   end
 
   % Add addtional source files as needed.
   %  |-------------
@@ -80,5 +88,3 @@ function packetizer_config(this_block)
   
   
 return;
-
-
