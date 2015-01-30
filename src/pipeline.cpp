@@ -113,7 +113,7 @@ void Pipeline::start()
             // Get pointer to next buffer
             unsigned char *udpBuffer = doubleBuffer->prepareRead(&timestamp, &sampRate);
 
-            // Copy UDP data to buffer - NAIVE - IMPROVE THIS SHIT OR DIE
+            // Copy UDP data to buffer - IMPROVE THIS SHIT OR DIE
             int heapSamples = samplesToGather * nchans;
             #pragma omp parallel
             {
@@ -138,7 +138,7 @@ void Pipeline::start()
 //            }
 
             // Done reading from buffer
-            //doubleBuffer.readReady();
+            doubleBuffer.readReady();
 
             //Pipeline
             // Step (1): Apply PPF

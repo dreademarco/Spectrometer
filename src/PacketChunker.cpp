@@ -11,8 +11,10 @@
 
 // NOTE: These are hardcoded values which depend on the backend F-engine design
 // which is sending data throug 10GigE-interface using a custom packet-format
-#define PACKET_DATA_LEN    4096  // bytes
-#define PACKET_HEADER_LEN  8     // bytes
+#define PACKET_DATA_LEN         4096  // bytes
+#define PACKET_HEADER_LEN       8     // bytes UDP HEADER
+//#define SPEAD_HEADERLEN    8     // 8 bytes from 4096 taken by UDP header
+#define PAYLOAD_LEN             2048  // only 2048 bytes of actual data, 2032 bytes of padding
 
 // Maximum size allocatable by kmalloc
 #define SIZE_MAX     131072*2
@@ -178,29 +180,20 @@ void PacketChunker::run()
         // Get UDP packet contents
         unsigned char *data = (unsigned char *) (((char *) udp_header) + sizeof(udphdr));
 
-//        for(int j = 0; j < PACKET_DATA_LEN; j++){
-//            cout << float(data[PACKET_HEADER_LEN + j]) << endl;
-//        }
-
         // Process SPEAD packet
-        // {
-//         uint64_t hdr;
+        {
+            uint64_t hdr;
+            hdr = SPEAD_HEADER(data);
 
+            if ((SPEAD_GET_MAGIC(hdr) != SPEAD_MAGIC) ||
+                    (SPEAD_GET_VERSION(hdr) != SPEAD_VERSION) ||
+                    (SPEAD_GET_ITEMSIZE(hdr) != SPEAD_ITEM_PTR_WIDTH) ||
+                    (SPEAD_GET_ADDRSIZE(hdr) != SPEAD_HEAP_ADDR_WIDTH))
+                            continue;
 
-//        hdr = SPEAD_HEADER(data);
-
-//        if ((SPEAD_GET_MAGIC(hdr) != SPEAD_MAGIC) ||
-//                (SPEAD_GET_VERSION(hdr) != SPEAD_VERSION) ||
-//                (SPEAD_GET_ITEMSIZE(hdr) != SPEAD_ITEM_PTR_WIDTH) ||
-//                (SPEAD_GET_ADDRSIZE(hdr) != SPEAD_HEAP_ADDR_WIDTH))
-//                        continue;
-
-//        unsigned nItems = SPEAD_GET_NITEMS(hdr);
-//        unsigned char *payload = data + SPEAD_HEADERLEN + nItems * SPEAD_ITEMLEN;
-
-        // }
-
-
+            unsigned nItems = SPEAD_GET_NITEMS(hdr);
+            unsigned char *payload = data + SPEAD_HEADERLEN + nItems * SPEAD_ITEMLEN;//CHECK FOR OUR PACKET
+        }
 
         long unsigned data_header = be64toh(((uint64_t *) data)[0]);
         unsigned long  time       = data_header >> 26;
