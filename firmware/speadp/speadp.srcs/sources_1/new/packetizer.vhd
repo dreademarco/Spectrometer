@@ -29,6 +29,7 @@ entity packetizer is
     Generic ( count_sw : in STD_LOGIC := '1');
     Port ( clk : in STD_LOGIC;
            ce : in STD_LOGIC;
+           reset_in : in STD_LOGIC;
            reset : out STD_LOGIC;
            tx_data : out STD_LOGIC_VECTOR (64 - 1 downto 0);
            tx_valid : out STD_LOGIC;
@@ -40,7 +41,7 @@ architecture Behavioral of packetizer is
 -- changes for v1.01
 -- added padding and removed payload length
 type state_t is (idle, header, heap_id, payload, padding, eof); 
-signal current_state : state_t;
+signal current_state : state_t := idle;
 
 constant frame_size     : integer := 256; -- work counter sizes
 constant payload_size   : integer := 128; -- using constants
@@ -95,7 +96,7 @@ begin
     register_signals : process (clk) is
     begin
         if (rising_edge(clk)) then
-            if (ce = '1') then
+            if (reset_in = '1') then
                 tx_eof   <= eof_s;
                 tx_data  <= tx_data_s;
                 tx_valid <= valid_s;
@@ -137,7 +138,7 @@ begin
 	change_state : process(clk, current_state)
 	begin
 		if (rising_edge(clk)) then
-		    if (ce = '1') then
+		    if (reset_in = '1') then
 		        -- since each state is only 1 clock cycle long
 		        -- we can change the state with just a flip-flop
 		        
