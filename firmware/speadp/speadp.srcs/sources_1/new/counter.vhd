@@ -8,7 +8,6 @@ entity counter is
     Generic ( count_size   : in integer := 8;
               increment_by : in integer := 1 );
     Port ( clk      : in STD_LOGIC;
-           ce       : in STD_LOGIC;
            reset    : in STD_LOGIC;
            data_out : out STD_LOGIC_VECTOR (count_size - 1 downto 0));
 end counter;
@@ -23,11 +22,7 @@ begin
     registers : process(clk)
     begin
         if (rising_edge(clk)) then
-            if ce = '1' then
-                data_out <= count;
-            else
-                data_out <= (OTHERS => '0');
-            end if;
+            data_out <= count;
         end if;
     end process;
     
@@ -36,12 +31,10 @@ begin
         if reset = '1' then
             count <= (OTHERS => '0');
         elsif (rising_edge(clk)) then
-            if ce = '1' then
-                if count = max_count then
-                    count <= (OTHERS => '0');
-                else
-                    count <= count + increment_by;
-                end if;
+            if count = max_count then 
+                count <= (OTHERS => '0');
+            else
+                count <= count + increment_by;
             end if;
         end if;
     end process;

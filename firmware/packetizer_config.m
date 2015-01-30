@@ -24,13 +24,13 @@ function packetizer_config(this_block)
   this_block.addSimulinkOutport('tx_eof');
 
   reset_port = this_block.port('reset');
-  reset_port.setType('UFix_1_0');
+  reset_port.setType('Bool');
   reset_port.useHDLVector(false);
   tx_valid_port = this_block.port('tx_valid');
-  tx_valid_port.setType('UFix_1_0');
+  tx_valid_port.setType('Bool');
   tx_valid_port.useHDLVector(false);
   tx_eof_port = this_block.port('tx_eof');
-  tx_eof_port.setType('UFix_1_0');
+  tx_eof_port.setType('Bool');
   tx_eof_port.useHDLVector(false);
   tx_data_port = this_block.port('tx_data');
   tx_data_port.setType('UFix_64_0');
