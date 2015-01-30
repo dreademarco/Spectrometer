@@ -13,9 +13,9 @@
 -- Dependencies: 
 -- 
 -- Revision:
--- Revision 1.00 - Version uno
+-- Revision 1.01 - Version uno punto zero uno
 -- Additional Comments:
---  <3 u andrea :P
+--  
 ----------------------------------------------------------------------------------
 
 
@@ -37,30 +37,42 @@ end packetizer;
 
 architecture Behavioral of packetizer is
 
-type state_t is (idle, header, heap_id, pay_len, payload, eof);
+-- changes for v1.01
+-- added padding and removed payload length
+type state_t is (idle, header, heap_id, payload, padding, eof); 
 signal current_state : state_t;
+
+constant frame_size     : integer := 256; -- work counter sizes
+constant payload_size   : integer := 128; -- using constants
 
 constant magic_number   : STD_LOGIC_VECTOR(8 - 1 downto 0)  := x"53";   -- ASCII character 'S'
 constant version_number : STD_LOGIC_VECTOR(8 - 1 downto 0)  := x"04";   -- version 4.0
 constant item_pointer_w : STD_LOGIC_VECTOR(8 - 1 downto 0)  := x"FF";   -- item pointer width
-constant heap_addr_w    : STD_LOGIC_VECTOR(8 - 1 downto 0)  := x"FF";   -- head address width
+constant heap_addr_w    : STD_LOGIC_VECTOR(8 - 1 downto 0)  := x"FF";   -- heap address width
 constant reserved       : STD_LOGIC_VECTOR(16 - 1 downto 0) := x"0000"; -- reserved
-constant nof_items      : STD_LOGIC_VECTOR(16 - 1 downto 0) := x"FFFF"; -- number of items
+constant nof_items      : STD_LOGIC_VECTOR(16 - 1 downto 0) := x"0010"; -- number of 16 SPEAD items (16*8 samples per packet)
 
 constant packet_header  : STD_LOGIC_VECTOR(64 - 1 downto 0) := magic_number & version_number & item_pointer_w & heap_addr_w & reserved & nof_items;
 
-signal heap_number      : STD_LOGIC_VECTOR(64 - 1 downto 0) := x"0000000000000000";
-constant payload_size   : integer := 8200;
+signal heap_number      : STD_LOGIC_VECTOR(64 - 1 downto 0) := (OTHERS => '0');
 
-signal eof_s, rst_s, valid_s : std_logic;
-signal data_d, data_s : std_logic_vector (64 - 1 downto 0);
-signal payload_s : std_logic_vector (64 - 1 downto 0);
+signal eof_s   : std_logic := '0';
+signal rst_s   : std_logic := '0';
+signal valid_s : std_logic := '0';
+signal tx_data_s : std_logic_vector (64 - 1 downto 0) := (OTHERS => '0');
+signal payload_s : std_logic_vector (64 - 1 downto 0) := (OTHERS => '0');
 
-signal state_number : std_logic_vector (8 - 1 downto 0);
+signal data_dyn : std_logic_vector (64 - 1 downto 0) := (OTHERS => '0');
+signal data_stc : std_logic_vector (64 - 1 downto 0) := (OTHERS => '0');
+
+signal state_number : std_logic_vector (4 - 1 downto 0) := (OTHERS => '0');
 signal state_reset  : std_logic := '1';
 
-signal idle_number : std_logic_vector (8 - 1 downto 0);
+signal idle_number : std_logic_vector (8 - 1 downto 0) := (OTHERS => '0');
 signal idle_reset  : std_logic := '1';
+
+signal padding_number : std_logic_vector (4 - 1 downto 0) := (OTHERS => '0');
+signal padding_reset  : std_logic := '1';
 
 begin
 
@@ -69,14 +81,14 @@ begin
         generator : entity work.running_generator
         Port Map ( clk => clk,
                    ce  => not(state_reset),
-                   data_out => data_d);   
+                   data_out => data_dyn);   
     end generate;
     
     static : if count_sw = '0' generate             
         generator : entity work.constant_generator
         Port Map ( clk => clk,
                    ce  => not(state_reset),
-                   data_out => data_s);   
+                   data_out => data_stc);   
     end generate;
 
     -- registers
@@ -85,11 +97,7 @@ begin
         if (rising_edge(clk)) then
             if (ce = '1') then
                 tx_eof   <= eof_s;
-                if ( count_sw = '0' ) then
-                    tx_data  <= data_s;
-                else
-                    tx_data  <= data_d;
-                end if;
+                tx_data  <= tx_data_s;
                 tx_valid <= valid_s;
                 reset    <= '0';
             else 
@@ -106,18 +114,24 @@ begin
     Generic Map ( count_size => 8 )
     Port Map (
         clk      => clk,
-        ce       => ce,
         reset    => idle_reset,
         data_out => idle_number);
 
     -- state number counter
     state_counter : entity work.counter 
-    Generic Map ( count_size => 8 )
+    Generic Map ( count_size => 4 )
     Port Map (
         clk      => clk,
-        ce       => ce,
         reset    => state_reset,
         data_out => state_number);
+        
+    -- padding number counter
+    padding_counter : entity work.counter 
+    Generic Map ( count_size => 4 )
+    Port Map (
+        clk      => clk,
+        reset    => padding_reset,
+        data_out => padding_number);
 
     -- control state machine
 	change_state : process(clk, current_state)
@@ -126,16 +140,31 @@ begin
 		    if (ce = '1') then
 		        -- since each state is only 1 clock cycle long
 		        -- we can change the state with just a flip-flop
+		        
+		        -- initial state is always idle and goes to header (256 clock cycles - no data)
 		        if (current_state = idle and idle_number = x"FF") then
 		            current_state <= header;
+		        
+		        -- send heap id after header (1 clock cycle - 8 bytes)
 		        elsif (current_state = header) then
 		            current_state <= heap_id;
+		            
+		        -- send payload after heap_id (1 clock cycle - 8 bytes)
 		        elsif (current_state = heap_id) then
-                    current_state <= pay_len;
-                elsif (current_state = pay_len) then
                     current_state <= payload;
-                elsif (current_state = payload and state_number = x"FF") then
+                    
+--                elsif (current_state = pay_len) then
+--                    current_state <= payload;
+
+                -- send padding after payload (16 clock cycles - 128 bytes)
+                elsif (current_state = payload and state_number = x"F") then
+                    current_state <= padding;
+                    
+                -- send eof after padding (12 clock cycles - 96 bytes of zeros)
+                elsif (current_state = padding and padding_number = x"A") then
                     current_state <= eof;
+                    
+                -- go back to idle mofo (1 clock cycle)
                 elsif (current_state = eof) then
                     current_state <= idle;
 		        end if;
@@ -145,71 +174,106 @@ begin
 		end if;
 	end process;
 
-	output : process(current_state, heap_number, data_s)
+	output : process(current_state, heap_number, tx_data_s)
 	begin
 		case current_state is
 			when idle    =>
 			    -- no data what so ever
-				data_s      <= (OTHERS => '0');
+				tx_data_s   <= (OTHERS => '0');
 				-- no end of frame
 				eof_s       <= '0';
 				-- no valid data
 				valid_s     <= '0';
 				-- reset states
-				state_reset <= '1';
-				idle_reset  <= '0';
+				idle_reset    <= '0';
+				state_reset   <= '1';
+				padding_reset <= '1';
+
 			when header  =>
 			    -- send out spead header
-				data_s      <= packet_header;
+				tx_data_s   <= packet_header;
 				-- no end of frame
 				eof_s       <= '0';
 				-- valid data
                 valid_s     <= '1';
 				-- no need to count for now
-				state_reset <= '1';
-				idle_reset  <= '1';
+				idle_reset    <= '1';
+				state_reset   <= '1';
+				padding_reset <= '1';
 				-- increment the heap number to indicate a new part of the heap
                 heap_number <= heap_number + 1;
+                
 			when heap_id =>		
 			    -- output the heap number	    
-			    data_s      <= heap_number;
+			    tx_data_s   <= heap_number;
 			    -- no end of frame
 			    eof_s       <= '0';
 			    -- valid data
                 valid_s     <= '1';
+			    -- remove reset from state couter
+			    state_reset <= '0';
 			    -- no need to count for now
-			    state_reset <= '1';
 			    idle_reset  <= '1';
-		    when pay_len  =>
-		        -- output the size of the payload
-                data_s   <= x"0000000000000101"; -- make dynamic at some point in time 
-                -- no end of frame
-                eof_s    <= '0';
-                -- valid data
-                valid_s     <= '1';
-                -- remove reset from state couter
-                state_reset <= '0';
-                idle_reset  <= '1';
+			    padding_reset <= '1';
+			    
+--		    when pay_len  =>
+--		        -- output the size of the payload
+--                tx_data_s   <= x"0000000000000101"; -- make dynamic at some point in time 
+--                -- no end of frame
+--                eof_s       <= '0';
+--                -- valid data
+--                valid_s     <= '1';
+--                -- remove reset from state couter
+--                state_reset <= '0';
+--                idle_reset  <= '1';
+
 			when payload =>
 			    -- output actual data
-				data_s   <= data_s;
+			    if ( count_sw = '0' ) then
+                    tx_data_s  <= data_stc;
+                else
+                    tx_data_s  <= data_dyn;
+                end if;
 				-- no end of frame
 				eof_s    <= '0';
 				-- valid data
                 valid_s     <= '1';
+                -- no need to count now
+                idle_reset  <= '1';
 				-- remove reset from state couter
                 state_reset <= '0';
+                -- remove reset from padding couter if last state
+                if (state_number = x"E") then
+                    padding_reset <= '0';
+                else
+                    padding_reset <= '1';
+                end if;
+                
+            when padding =>
+                -- output actual data
+                tx_data_s   <= (OTHERS => '0');
+                -- no end of frame
+                eof_s       <= '0';
+                -- valid data
+                valid_s     <= '1';
+                -- no need to count for now
+                state_reset <= '1';
                 idle_reset  <= '1';
+                -- remove reset from padding couter
+                padding_reset <= '0';
+                
 		    when eof =>
 		        -- no data to output
-		        data_s   <= (OTHERS => '0');
+		        tx_data_s   <= (OTHERS => '0');
 		        -- end of frame
-		        eof_s    <= '1';
+		        eof_s       <= '1';
 		        -- valid data
                 valid_s     <= '1';
                 -- no need to count for now
                 state_reset <= '1';
-                idle_reset  <= '0';
+                padding_reset <= '1';
+                -- prepeare idle count
+                idle_reset  <= '0';                
 		end case;
 	end process;
 

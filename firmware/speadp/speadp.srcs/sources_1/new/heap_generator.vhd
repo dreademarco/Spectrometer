@@ -38,7 +38,6 @@ begin
     Generic Map ( count_size => 8, increment_by => inc )
     Port Map (
         clk      => clk,
-        ce       => ce,
         reset    => '0',
         data_out => real_data);
 
@@ -46,7 +45,6 @@ begin
     Generic Map ( count_size => 8, increment_by => inc )
     Port Map (
         clk      => clk,
-        ce       => ce,
         reset    => '0',
         data_out => comp_data);
 
